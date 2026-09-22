@@ -6,8 +6,8 @@ NFT Quant Trading Terminal for collection liquidity research and non-custodial E
 
 - Terminal: collection search, aggregated asks and collection-wide bids, spread, liquidity bands, net-edge estimates and sweep targets.
 - Scanner: compare up to eight collections with explicit depth coverage and cost assumptions.
-- Wallet, Orders and Positions: injected-wallet balances, paginated holdings, order creation/cancellation and floor-versus-bid estimates.
-- Watchlist and Settings: preserved browser watchlists, real API health, diagnostics and trading preferences.
+- Wallet, Orders and Positions: injected or Privy wallet balances, paginated holdings, order creation/cancellation and floor-versus-bid estimates.
+- Watchlist and Settings: add/remove collections, optional account sync through Supabase, real API health, diagnostics and trading preferences.
 - Existing collection holder/activity research and tracked-wallet tools remain accessible.
 
 ## Run
@@ -23,6 +23,8 @@ npm ci
 Copy `.env.example` to `.env.local`, set `OPENSEA_API_KEY`, then run `npm run dev`.
 Optional `ETHEREUM_RPC_URL` supplies a server-only RPC; otherwise public Ethereum RPC is used. `ETHERSCAN_API_KEY` supports the existing wallet research tools. No server credential belongs in a `NEXT_PUBLIC_` variable.
 
+For account-backed watchlists, run `supabase/migrations/20260923_watchlist_items.sql` in the intended Supabase project and set `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_PRIVY_APP_ID`, and `PRIVY_APP_SECRET`. Configure the deployed site as an allowed origin in the Privy dashboard. The service-role key and Privy app secret must only be set in server environment variables. Without a configured Privy app, the existing injected-wallet connection and browser watchlist remain available. Settings shows the actual configuration state.
+
 ```sh
 npm run lint
 npm run typecheck
@@ -36,4 +38,4 @@ Orders are prepared through server-only OpenSea APIs and signed by the connected
 
 Depth is advertised liquidity, not guaranteed executable capital. Partial pagination, shared maker funds, fees and resale uncertainty are visible. Gross spread is never described as profit. Production routes never supply mock market data.
 
-The existing OpenSea credential was found expired during verification. A replacement server credential is required for complete live API and trading acceptance. See [architecture, scope and verification notes](docs/MANCING-NFT.md).
+The previous production OpenSea credential returned 401. A temporary replacement key restored authenticated order-book access on 23 September 2026; it expires around 29 September 2026 and must be replaced with a permanent server-side OpenSea key. See [architecture, scope and verification notes](docs/MANCING-NFT.md).

@@ -1,9 +1,23 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { useWatchlist } from "@/lib/watchlist";
 import { CollectionSearch } from "@/components/terminal/CollectionSearch";
 export default function Page() {
-  const { items, removeItem } = useWatchlist();
+  const { items, removeItem, upsertItem, hydrated, syncError, storage } = useWatchlist();
+  const [slug, setSlug] = useState("");
+  const [inputError, setInputError] = useState("");
+  function add(event: React.FormEvent) {
+    event.preventDefault();
+    const clean = slug.trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9_-]{0,159}$/.test(clean)) {
+      setInputError("Enter a valid OpenSea collection slug.");
+      return;
+    }
+    upsertItem({ slug: clean, chain: "ethereum" });
+    setSlug("");
+    setInputError("");
+  }
   return (
     <main className="terminal-page">
       <div className="terminal-heading">
@@ -13,6 +27,15 @@ export default function Page() {
         </div>
       </div>
       <CollectionSearch />
+      <form className="watchlist-add" onSubmit={add}>
+        <label htmlFor="watchlist-slug">Add collection by OpenSea slug</label>
+        <div>
+          <input id="watchlist-slug" value={slug} onChange={(event) => setSlug(event.target.value)} placeholder="e.g. pudgypenguins" />
+          <button className="t-button t-primary" type="submit">Add to watchlist</button>
+        </div>
+        {inputError && <p className="t-error" role="alert">{inputError}</p>}
+      </form>
+      {syncError && <p className="t-error" role="alert">{syncError}</p>}
       <div className="t-panel">
         {items.map((i) => (
           <div className="watchlist-entry" key={`${i.chain}:${i.slug}`}>
@@ -36,15 +59,14 @@ export default function Page() {
             </button>
           </div>
         ))}
-        {!items.length && (
+        {hydrated && !items.length && (
           <div className="ledger-empty">
             Find a collection and select “Watch collection” to add it here.
           </div>
         )}
       </div>
       <p className="t-note">
-        Saved in this browser. Existing watchlist entries and research targets
-        are preserved.
+        Storage: {storage}. Your existing browser watchlist remains available when signed out.
       </p>
     </main>
   );

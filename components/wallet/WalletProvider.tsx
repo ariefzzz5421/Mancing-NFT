@@ -21,10 +21,14 @@ type Provider = EIP1193Provider & {
   on?: (event: string, fn: (value: unknown) => void) => void;
   removeListener?: (event: string, fn: (value: unknown) => void) => void;
 };
-export function injected() {
-  return (window as unknown as { ethereum?: Provider }).ethereum;
+let privyProvider: EIP1193Provider | null = null;
+export function setPrivyProvider(provider: EIP1193Provider | null) {
+  privyProvider = provider;
 }
-type Wallet = {
+export function injected() {
+  return privyProvider ?? (window as unknown as { ethereum?: Provider }).ethereum;
+}
+export type Wallet = {
   address: Address | null;
   chain: number | null;
   eth: string | null;
@@ -34,8 +38,11 @@ type Wallet = {
   connect: () => Promise<void>;
   disconnect: () => void;
   refresh: () => Promise<void>;
+  userId: string | null;
+  getAccessToken: () => Promise<string | null>;
 };
-const Context = createContext<Wallet | null>(null);
+export const Context = createContext<Wallet | null>(null);
+const noAccessToken = async () => null;
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [address, setAddress] = useState<Address | null>(null),
     [chain, setChain] = useState<number | null>(null),
@@ -130,6 +137,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
           setBalance({ eth: null, weth: null });
         },
         refresh,
+        userId: null,
+        getAccessToken: noAccessToken,
       }}
     >
       {children}

@@ -2,11 +2,20 @@
 import { useEffect, useState } from "react";
 import { useWallet } from "@/components/wallet/WalletProvider";
 import type { Health } from "@/types/market";
+import { Check, X } from "lucide-react";
+type Config = { supabase: { configured: boolean; operational: boolean }; privy: { configured: boolean }; rpc: { dedicated: boolean }; opensea: { configured: boolean } };
+function Status({ okay, label }: { okay: boolean; label: string }) {
+  return <span className={`config-status ${okay ? "config-status--okay" : "config-status--missing"}`}>
+    {okay ? <Check size={15} aria-hidden="true" /> : <X size={15} aria-hidden="true" />}
+    <span>{label}</span>
+  </span>;
+}
 export function Settings() {
   const w = useWallet(),
     [health, setHealth] = useState<Health | null>(null),
     [rpc, setRpc] = useState("Checking…"),
     [coin, setCoin] = useState("Checking…"),
+    [config, setConfig] = useState<Config | null>(null),
     [busy, setBusy] = useState(false);
   async function check() {
     setBusy(true);
@@ -14,10 +23,12 @@ export function Settings() {
       fetch("/api/health").then((r) => r.json()),
       fetch("/api/network").then((r) => r.json()),
       fetch("/api/market/prices").then((r) => r.json()),
+      fetch("/api/config").then((r) => r.json()),
     ]);
     if (r[0].status === "fulfilled") setHealth(r[0].value);
     setRpc(r[1].status === "fulfilled" ? r[1].value.state : "Offline");
     setCoin(r[2].status === "fulfilled" ? r[2].value.source : "Offline");
+    if (r[3].status === "fulfilled") setConfig(r[3].value);
     setBusy(false);
   }
   useEffect(() => {
@@ -54,17 +65,12 @@ export function Settings() {
         <section className="t-panel">
           <div className="panel-title">SYSTEM STATUS</div>
           <dl className="metric-list">
-            {[
-              ["OpenSea API", health?.state ?? "Checking…"],
-              ["RPC", rpc],
-              ["ETH price source", coin],
-              ["Wallet", w.address ? "Connected" : "Disconnected"],
-            ].map(([l, v]) => (
-              <div key={l}>
-                <dt>{l}</dt>
-                <dd>{v}</dd>
-              </div>
-            ))}
+            <div><dt>OpenSea API</dt><dd><Status okay={health?.state === "Operational"} label={health?.state ?? "Checking…"} /></dd></div>
+            <div><dt>Supabase</dt><dd><Status okay={config?.supabase.operational === true} label={config?.supabase.operational ? "Connected" : config?.supabase.configured ? "Connection failed" : "Not configured"} /></dd></div>
+            <div><dt>Privy</dt><dd><Status okay={config?.privy.configured === true} label={config?.privy.configured ? "Configured" : "Not configured"} /></dd></div>
+            <div><dt>RPC</dt><dd><Status okay={rpc === "Operational"} label={rpc === "Operational" ? config?.rpc.dedicated ? "Dedicated RPC online" : "Public RPC online" : rpc} /></dd></div>
+            <div><dt>CoinGecko</dt><dd><Status okay={coin === "coingecko"} label={coin === "coingecko" ? "Operational" : "Fallback / unavailable"} /></dd></div>
+            <div><dt>Wallet</dt><dd><Status okay={Boolean(w.address)} label={w.address ? "Connected" : "Disconnected"} /></dd></div>
           </dl>
           <p className="t-note">
             OpenSea health probes an authenticated order endpoint. Successful
@@ -161,7 +167,7 @@ export function Settings() {
             </div>
             <div>
               <dt>Watchlist / preferences</dt>
-              <dd>This browser</dd>
+              <dd>{w.userId && config?.supabase.operational ? "Supabase · browser cache" : "This browser"}</dd>
             </div>
             <div>
               <dt>Signing</dt>

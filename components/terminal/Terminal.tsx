@@ -7,6 +7,7 @@ import { OrderBook } from "./OrderBook";
 import { TradePanel } from "./TradePanel";
 import { NetEdgeCalculator } from "./NetEdgeCalculator";
 import { SweepCalculator, LiquidityPanel } from "./SweepCalculator";
+import { PriceHistoryChart } from "./PriceHistoryChart";
 import { eth } from "@/lib/quant/book";
 import type { Book, Collection, Stats, Level, Side } from "@/types/market";
 import { useWatchlist } from "@/lib/watchlist";
@@ -92,20 +93,25 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
         </div>
         <button
           className="t-button"
-          onClick={() =>
+          onClick={() => {
+            if (watchlist.byKey.has(`ethereum:${slug}`)) {
+              watchlist.removeItem(slug, "ethereum");
+              return;
+            }
             watchlist.upsertItem({
               slug,
               name: collection?.name ?? slug,
               chain: "ethereum",
               imageUrl: collection?.image ?? null,
-            })
-          }
+            });
+          }}
         >
           {watchlist.items.some((x) => x.slug === slug)
-            ? "✓ Watching"
+            ? "× Remove from watchlist"
             : "+ Watch collection"}
         </button>
       </div>
+      {watchlist.syncError && <p className="t-error" role="alert">{watchlist.syncError}</p>}
       <CollectionSearch />
       <SpreadPanel
         bid={book?.bids[0]?.priceWei}
@@ -169,6 +175,9 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
           />
           <NetEdgeCalculator entry={entry} exit={exit} quantity={quantity} />
         </aside>
+      </div>
+      <div className={`terminal-analytics ${tab === "Analytics" ? "mobile-visible" : ""}`}>
+        <PriceHistoryChart slug={slug} floor={stats?.floor ?? null} />
       </div>
     </main>
   );

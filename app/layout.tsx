@@ -5,6 +5,7 @@ import { AppNav } from "@/components/AppNav";
 import "./globals.css";
 import "./terminal.css";
 import { WalletProvider } from "@/components/wallet/WalletProvider";
+import { PrivyWalletProvider } from "@/components/wallet/PrivyWalletProvider";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -43,11 +44,15 @@ export default function RootLayout({
   return (
     <html className={`${geist.variable} ${plexMono.variable}`} lang="en">
       <body>
-        <WalletProvider>
+        {process.env.NEXT_PUBLIC_PRIVY_APP_ID ? <PrivyWalletProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID}>
           <AppNav />
           {children}
           <AppFooter />
-        </WalletProvider>
+        </PrivyWalletProvider> : <WalletProvider>
+          <AppNav />
+          {children}
+          <AppFooter />
+        </WalletProvider>}
       </body>
     </html>
   );

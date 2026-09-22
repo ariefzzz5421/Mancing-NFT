@@ -5,6 +5,7 @@
   --terminal-rule: #22303c;
   --terminal-muted: #91a0b1;
   --terminal-accent: #59ceef;
+  --terminal-text: #e3eaf1;
   --bid: #63d5a5;
   --ask: #f18d9b;
 }
@@ -1027,4 +1028,32 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: 16px;
+}
+.config-status { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.config-status--okay { color: var(--bid); }
+.config-status--missing { color: var(--ask); }
+
+.watchlist-add { display: grid; gap: 9px; margin: 16px 0; color: var(--terminal-muted); font-size: 12px; }
+.watchlist-add > div { display: flex; gap: 9px; }
+.watchlist-add input { flex: 1; min-width: 0; border: 1px solid var(--terminal-rule); background: var(--terminal-panel); color: var(--terminal-text); padding: 10px 12px; font: 13px var(--font-plex-mono); }
+.watchlist-entry > a { min-width: 0; overflow-wrap: anywhere; }
+.terminal-analytics { margin-top: 14px; }
+.price-history { padding: 16px; }
+.price-history__summary { display: flex; flex-wrap: wrap; gap: 16px 40px; padding: 13px 0; }
+.price-history__summary > div { display: grid; gap: 4px; }
+.price-history__summary small { color: var(--terminal-muted); font: 10px var(--font-plex-mono); letter-spacing: .08em; }
+.price-history__summary strong { color: var(--terminal-text); font: 500 16px var(--font-plex-mono); }
+.price-history__chart { height: 240px; width: 100%; min-width: 0; }
+.price-history__state { display: flex; align-items: center; justify-content: center; min-height: 180px; color: var(--terminal-muted); gap: 12px; }
+.price-history .t-note { margin-bottom: 0; }
+@media (max-width: 700px) {
+  .terminal-analytics { display: none; }
+  .terminal-analytics.mobile-visible { display: block; }
+  .price-history { padding: 12px; }
+  .price-history__chart { height: 210px; }
+  .price-history__summary { gap: 10px 20px; }
+  .price-history__summary strong { font-size: 13px; }
+  .watchlist-add > div { flex-direction: column; }
+  .watchlist-entry { align-items: flex-start; }
+  .watchlist-entry > .t-button { flex: 0 0 auto; }
 }

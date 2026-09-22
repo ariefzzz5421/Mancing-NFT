@@ -12,12 +12,12 @@ async function side(slug: string, side: Side) {
   do {
     const q = new URLSearchParams({ limit: "200" });
     if (cursor) q.set("next", cursor);
-    const raw = record(
-      await request(
-        `/${kind}/collection/${encodeURIComponent(slug)}/all?${q}`,
-        20,
-      ),
-    );
+    // The /all offer feed mixes NFT-specific and collection offers. On busy
+    // collections its first pages can contain no collection-wide bids at all.
+    const endpoint = side === "bid"
+      ? `/offers/collection/${encodeURIComponent(slug)}?${q}`
+      : `/listings/collection/${encodeURIComponent(slug)}/all?${q}`;
+    const raw = record(await request(endpoint, 20));
     for (const item of arr(raw[kind])) {
       const order = normalizeOrder(item, side);
       if (!order) {
