@@ -1,5 +1,4 @@
-import { DashboardPage } from "@/components/dashboard/DashboardPage";
-
+import { Terminal } from "@/components/terminal/Terminal";
 export default function Home() {
-  return <DashboardPage />;
+  return <Terminal />;
 }

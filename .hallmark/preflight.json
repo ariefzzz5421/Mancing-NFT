@@ -1,9 +1,1 @@
-{
-  "date": "2026-08-02",
-  "framework": "Next.js 16.2.9 App Router",
-  "font": "Geist for interface text and IBM Plex Mono for market values",
-  "palette": "Semantic OKLCH tokens with blue interaction, green/red market direction, and NFT artwork color",
-  "motion": "No motion library; CSS ticker and analyze loading animation",
-  "spacing": "Four-point semantic scale in tokens.css",
-  "preserve": ["Tailwind 4", "Lucide icons", "dark/light toggle", "read-only behavior"]
-}
+{"framework":"Next.js App Router","fonts":["Geist","IBM Plex Mono"],"palette":"Existing near-black with cyan accent","motion":"cut","date":"2026-09-22"}

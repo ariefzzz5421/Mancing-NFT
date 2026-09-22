@@ -8,7 +8,7 @@ import {
 } from "@/lib/opensea";
 import type { CollectionDiscoveryResponse } from "@/lib/types";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 function readFailure(reason: unknown, label: string) {
   if (reason instanceof OpenSeaApiError) return `${label}: ${reason.message}`;
@@ -55,7 +55,7 @@ export async function GET() {
   return NextResponse.json(payload, {
     status,
     headers: {
-      "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+      "Cache-Control": "no-store",
     },
   });
 }

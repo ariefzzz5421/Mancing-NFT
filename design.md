@@ -1,7 +1,7 @@
-# Design - NFT Sweep Depth
+# Design - Mancing NFT
 
 A locked visual system for the routed analytics app. Business logic, API routes,
-watchlist persistence, and read-only behavior remain outside this document.
+watchlist persistence, and non-custodial signing boundaries remain outside this document.
 
 ## Genre
 
@@ -119,3 +119,6 @@ The reusable DTCG export is stored in `tokens.json` at the project root.
   --radius: 0.25rem;
 }
 ```
+
+## Mancing NFT terminal redesign
+Quant Workbench: collection 23%, book 45%, execution 32%. Near-black panels, cyan controls, green bids and red asks. Mobile uses Overview, Book, Trade and Analytics tabs. Preserve Geist and IBM Plex Mono. No decorative motion or gradients.

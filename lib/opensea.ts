@@ -1,6 +1,5 @@
-import { OPENSEA_REFRESH_POLICY } from "@/lib/refresh";
+import { request, MarketError } from "@/lib/opensea/client";
 
-const OPENSEA_BASE_URL = "https://api.opensea.io/api/v2";
 const PAGE_LIMIT = 200;
 const MAX_PAGES = 100;
 const HOLDER_PAGE_LIMIT = 100;
@@ -16,65 +15,21 @@ export class OpenSeaApiError extends Error {
   }
 }
 
-function getApiKey() {
-  const apiKey = process.env.OPENSEA_API_KEY;
-
-  if (!apiKey) {
-    throw new OpenSeaApiError(
-      "Missing OPENSEA_API_KEY. Create .env.local and add OPENSEA_API_KEY=your_key_here.",
-      500,
-    );
-  }
-
-  return apiKey;
-}
-
 async function fetchOpenSea<T>(path: string): Promise<T> {
-  let response: Response;
-
   try {
-    response = await fetch(`${OPENSEA_BASE_URL}${path}`, {
-      headers: {
-        Accept: "application/json",
-        "X-API-KEY": getApiKey(),
-      },
-      next: { revalidate: OPENSEA_REFRESH_POLICY.cacheSeconds },
-      signal: AbortSignal.timeout(12_000),
-    });
-  } catch (cause) {
-    if (cause instanceof Error && cause.name === "TimeoutError") {
-      throw new OpenSeaApiError("OpenSea did not respond within 12 seconds.", 504);
-    }
-
-    throw cause;
+    return await request<T>(
+      path,
+      path.includes("/stats")
+        ? 45
+        : /^\/collections\/[^/?]+$/.test(path)
+          ? 900
+          : 30,
+    );
+  } catch (e) {
+    if (e instanceof MarketError)
+      throw new OpenSeaApiError(e.message, e.status);
+    throw e;
   }
-
-  if (!response.ok) {
-    if (response.status === 429) {
-      const retryAfter = response.headers.get("retry-after");
-      throw new OpenSeaApiError(
-        retryAfter
-          ? `OpenSea rate limit reached. Retry after ${retryAfter} seconds.`
-          : "OpenSea rate limit reached. Wait before refreshing again.",
-        429,
-      );
-    }
-
-    if (response.status === 404) {
-      throw new OpenSeaApiError("OpenSea resource was not found.", 404);
-    }
-
-    if (response.status === 401 || response.status === 403) {
-      throw new OpenSeaApiError(
-        "OpenSea data access needs a server credential refresh.",
-        503,
-      );
-    }
-
-    throw new OpenSeaApiError(`OpenSea request failed with status ${response.status}.`, response.status);
-  }
-
-  return (await response.json()) as T;
 }
 
 function readArrayPayload(payload: unknown, key: string) {
@@ -106,7 +61,9 @@ export function fetchContract(chain: string, address: string) {
 }
 
 export function fetchCollectionStats(slug: string) {
-  return fetchOpenSea<unknown>(`/collections/${encodeURIComponent(slug)}/stats`);
+  return fetchOpenSea<unknown>(
+    `/collections/${encodeURIComponent(slug)}/stats`,
+  );
 }
 
 export function fetchTopCollections(limit = 20) {
@@ -223,7 +180,10 @@ export async function fetchAllCollectionOffers(slug: string) {
   return offers;
 }
 
-export async function fetchCollectionEvents(slug: string, params: URLSearchParams) {
+export async function fetchCollectionEvents(
+  slug: string,
+  params: URLSearchParams,
+) {
   return fetchOpenSea<unknown>(
     `/events/collection/${encodeURIComponent(slug)}?${params.toString()}`,
   );

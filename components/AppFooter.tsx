@@ -4,10 +4,10 @@ export function AppFooter() {
   return (
     <footer className="app-footer">
       <div className="app-footer__inner">
-        <p>NFT Sweep Depth / Collection liquidity research</p>
+        <p>Mancing NFT / NFT Quant Trading Terminal</p>
         <p className="app-footer__status">
           <LockKeyhole aria-hidden="true" size={14} />
-          Read-only / No wallet signatures / No trade execution
+          Non-custodial / Market estimates, not guaranteed returns
         </p>
       </div>
     </footer>

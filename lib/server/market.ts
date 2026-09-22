@@ -8,44 +8,7 @@ import type {
 const COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3/simple/price";
 const YAHOO_BASE_URL = "https://query1.finance.yahoo.com/v8/finance/chart";
 
-const MARKET_ASSETS = [
-  {
-    coingeckoId: "bitcoin",
-    name: "Bitcoin",
-    symbol: "BTC",
-    yahooTicker: "BTC-USD",
-  },
-  {
-    coingeckoId: "ethereum",
-    name: "Ethereum",
-    symbol: "ETH",
-    yahooTicker: "ETH-USD",
-  },
-  {
-    coingeckoId: "apecoin",
-    name: "ApeCoin",
-    symbol: "APE",
-    yahooTicker: "APE-USD",
-  },
-  {
-    coingeckoId: "hyperliquid",
-    name: "Hyperliquid",
-    symbol: "HYPE",
-    yahooTicker: "HYPE-USD",
-  },
-  {
-    coingeckoId: "binancecoin",
-    name: "BNB",
-    symbol: "BNB",
-    yahooTicker: "BNB-USD",
-  },
-  {
-    coingeckoId: "solana",
-    name: "Solana",
-    symbol: "SOL",
-    yahooTicker: "SOL-USD",
-  },
-] as const;
+const MARKET_ASSETS = [{coingeckoId: "ethereum",name: "Ethereum",symbol: "ETH",yahooTicker: "ETH-USD"}] as const;
 
 function readNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;

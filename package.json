@@ -6,14 +6,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@opensea/seaport-js": "^4.3.0",
+    "ethers": "^6.17.0",
     "lucide-react": "^1.21.0",
-    "next": "16.2.9",
+    "next": "^16.3.5",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "recharts": "^3.9.0"
+    "recharts": "^3.9.0",
+    "server-only": "^0.0.1",
+    "viem": "^2.56.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -21,11 +27,12 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.9",
+    "eslint-config-next": "^16.3.5",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   },
   "overrides": {
-    "postcss": "8.5.15"
+    "postcss": "8.5.23"
   }
 }

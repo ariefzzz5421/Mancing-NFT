@@ -1,5 +1,12 @@
 [
   {
+    "date": "2026-09-22",
+    "macrostructure": "Quant Workbench",
+    "theme": "existing dark terminal",
+    "enrichment": "none",
+    "brief": "Mancing NFT collection liquidity terminal"
+  },
+  {
     "date": "2026-08-04",
     "scope": "app-refinement",
     "macrostructure": "20 Ecosystem Index",

@@ -3,6 +3,8 @@ import { Geist, IBM_Plex_Mono } from "next/font/google";
 import { AppFooter } from "@/components/AppFooter";
 import { AppNav } from "@/components/AppNav";
 import "./globals.css";
+import "./terminal.css";
+import { WalletProvider } from "@/components/wallet/WalletProvider";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -16,9 +18,18 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NFT Sweep Depth",
+  title: {
+    default: "Mancing NFT | NFT Quant Trading Terminal",
+    template: "%s | Mancing NFT",
+  },
+  openGraph: {
+    title: "Mancing NFT",
+    description: "NFT Quant Trading Terminal",
+    siteName: "Mancing NFT",
+    type: "website",
+  },
   description:
-    "Read-only NFT analytics dashboard for estimating sweep depth and orderbook cost.",
+    "NFT Quant Trading Terminal. Explore collection liquidity, bid/ask depth, spread and estimated net edge.",
   icons: {
     icon: "/icon.svg",
   },
@@ -32,9 +43,11 @@ export default function RootLayout({
   return (
     <html className={`${geist.variable} ${plexMono.variable}`} lang="en">
       <body>
-        <AppNav />
-        {children}
-        <AppFooter />
+        <WalletProvider>
+          <AppNav />
+          {children}
+          <AppFooter />
+        </WalletProvider>
       </body>
     </html>
   );
