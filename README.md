@@ -4,10 +4,11 @@ NFT Quant Trading Terminal for collection liquidity research and non-custodial E
 
 ## Workspaces
 
+- Overview: real OpenSea trending collections and 24h volume ranking, with collection search and direct terminal access. Trending floor and volume are shown only when OpenSea statistics are available.
 - Terminal: collection search, aggregated asks and collection-wide bids, spread, liquidity bands, net-edge estimates and sweep targets.
 - Scanner: compare up to eight collections with explicit depth coverage and cost assumptions.
 - Wallet, Orders and Positions: injected or Privy wallet balances, paginated holdings, order creation/cancellation and floor-versus-bid estimates.
-- Watchlist and Settings: add/remove collections, optional account sync through Supabase, real API health, diagnostics and trading preferences.
+- Watchlist and Settings: a built-in Default list, named groups selected from the star dialog, wallet-scoped Supabase sync, real API health and reported OpenSea request quota, diagnostics and trading preferences.
 - Existing collection holder/activity research and tracked-wallet tools remain accessible.
 
 ## Run

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { DEFAULT_TARGET_FLOORS } from "@/lib/sweep";
 import type { TrackedWallet, WatchlistGroup, WatchlistItem } from "@/lib/types";
 import {
@@ -70,20 +70,21 @@ function writeGroups(groups: WatchlistGroup[], storageKey: string) {
   window.dispatchEvent(new Event("watchlist-updated"));
 }
 
-export function useWatchlist() {
+function useWatchlistState() {
   const { userId } = useWallet();
   const storageKey = userId ? `mancing-watchlist:wallet:${userId}:v1` : WATCHLIST_STORAGE_KEY;
   const groupsKey = userId ? `mancing-watchlist-groups:${userId}:v1` : GROUPS_STORAGE_KEY;
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [groups, setGroups] = useState<WatchlistGroup[]>([]);
-  const [hydrated, setHydrated] = useState(false);
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const [cloudReady, setCloudReady] = useState(!userId);
   const [syncError, setSyncError] = useState("");
 
   useEffect(() => {
     queueMicrotask(() => {
       setItems(readWatchlist(storageKey));
       setGroups(readGroups(groupsKey));
-      setHydrated(true);
+      setLoadedKey(storageKey);
     });
 
     function handleStorage() {
@@ -101,8 +102,12 @@ export function useWatchlist() {
   }, [storageKey, groupsKey]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      queueMicrotask(() => setCloudReady(true));
+      return;
+    }
     let active = true;
+    queueMicrotask(() => { if (active) setCloudReady(false); });
     async function loadCloud() {
       try {
         const [response, groupResponse] = await Promise.all([
@@ -123,7 +128,7 @@ export function useWatchlist() {
         }
       } catch (error) {
         if (active) setSyncError(error instanceof Error ? error.message : "Cloud watchlist unavailable.");
-      }
+      } finally { if (active) setCloudReady(true); }
     }
     void loadCloud();
     return () => { active = false; };
@@ -256,12 +261,10 @@ export function useWatchlist() {
     [persist, storageKey, sync],
   );
 
-  const bySlug = useMemo(() => {
-    return new Map(items.map((item) => [item.slug, item]));
-  }, [items]);
-  const byKey = useMemo(() => {
-    return new Map(items.map((item) => [getWatchlistKey(item.slug, item.chain), item]));
-  }, [items]);
+  const visibleItems = useMemo(() => loadedKey === storageKey ? items : [], [loadedKey, storageKey, items]);
+  const visibleGroups = useMemo(() => loadedKey === storageKey ? groups : [], [loadedKey, storageKey, groups]);
+  const bySlug = useMemo(() => new Map(visibleItems.map((item) => [item.slug, item])), [visibleItems]);
+  const byKey = useMemo(() => new Map(visibleItems.map((item) => [getWatchlistKey(item.slug, item.chain), item])), [visibleItems]);
 
   const createGroup = useCallback(async (name: string) => {
     const clean = name.trim();
@@ -348,9 +351,10 @@ export function useWatchlist() {
     addWallet,
     byKey,
     bySlug,
-    hydrated,
-    items,
-    groups,
+    cloudReady: loadedKey === storageKey && cloudReady,
+    hydrated: loadedKey === storageKey,
+    items: visibleItems,
+    groups: visibleGroups,
     createGroup,
     renameGroup,
     removeGroup,
@@ -358,7 +362,7 @@ export function useWatchlist() {
     importBrowserItems,
     guestCount: userId
       ? readWatchlist().filter((guest) => !byKey.has(getWatchlistKey(guest.slug, guest.chain))).length
-        + readGroups(GROUPS_STORAGE_KEY).filter((guest) => !groups.some((saved) => saved.name.toLowerCase() === guest.name.toLowerCase())).length
+        + readGroups(GROUPS_STORAGE_KEY).filter((guest) => !visibleGroups.some((saved) => saved.name.toLowerCase() === guest.name.toLowerCase())).length
       : 0,
     signedIn: Boolean(userId),
     syncError,
@@ -368,6 +372,19 @@ export function useWatchlist() {
     updateTargetFloors,
     upsertItem,
   };
+}
+
+const WatchlistContext = createContext<ReturnType<typeof useWatchlistState> | null>(null);
+
+export function WatchlistProvider({ children }: { children: React.ReactNode }) {
+  const watchlist = useWatchlistState();
+  return createElement(WatchlistContext.Provider, { value: watchlist }, children);
+}
+
+export function useWatchlist() {
+  const watchlist = useContext(WatchlistContext);
+  if (!watchlist) throw new Error("WatchlistProvider required");
+  return watchlist;
 }
 
 export function getDefaultWatchlistItem(

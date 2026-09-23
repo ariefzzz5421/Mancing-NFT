@@ -18,7 +18,8 @@ export function Navigation() {
         </Link>
         <div className="terminal-links">
           {[
-            ["/", "Terminal"],
+            ["/", "Overview"],
+            ["/terminal/pudgypenguins", "Terminal"],
             ["/scanner", "Scanner"],
             ["/orders", "Orders"],
             ["/positions", "Positions"],
@@ -32,7 +33,9 @@ export function Navigation() {
               aria-current={
                 (
                   href === "/"
-                    ? path === "/" || path.startsWith("/terminal/")
+                    ? path === "/"
+                    : href === "/terminal/pudgypenguins"
+                      ? path.startsWith("/terminal/")
                     : path === href
                 )
                   ? "page"

@@ -6,6 +6,7 @@ import "./globals.css";
 import "./terminal.css";
 import { WalletProvider } from "@/components/wallet/WalletProvider";
 import { PrivyWalletProvider } from "@/components/wallet/PrivyWalletProvider";
+import { WatchlistProvider } from "@/lib/watchlist";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -45,13 +46,9 @@ export default function RootLayout({
     <html className={`${geist.variable} ${plexMono.variable}`} lang="en">
       <body>
         {process.env.NEXT_PUBLIC_PRIVY_APP_ID ? <PrivyWalletProvider appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID}>
-          <AppNav />
-          {children}
-          <AppFooter />
+          <WatchlistProvider><AppNav />{children}<AppFooter /></WatchlistProvider>
         </PrivyWalletProvider> : <WalletProvider>
-          <AppNav />
-          {children}
-          <AppFooter />
+          <WatchlistProvider><AppNav />{children}<AppFooter /></WatchlistProvider>
         </WalletProvider>}
       </body>
     </html>

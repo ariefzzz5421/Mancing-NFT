@@ -1,7 +1,9 @@
 "use client";
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import type { Book, Level, Side } from "@/types/market";
 import { aggregate, eth, spread, wei } from "@/lib/quant/book";
+import { useLiveEthPrice } from "@/components/useLiveEthPrice";
 export function OrderBook({
   book,
   loading,
@@ -17,6 +19,12 @@ export function OrderBook({
 }) {
   const [tick, setTick] = useState("0");
   const [limit, setLimit] = useState(10);
+  const ethUsd = useLiveEthPrice();
+  const asUsd = (valueWei: string) => {
+    if (!ethUsd.priceUsd) return "—";
+    const value = Number(eth(valueWei)) * ethUsd.priceUsd;
+    return Number.isFinite(value) ? "$" + value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: value < 1 ? 4 : 2 }) : "—";
+  };
   const asks = useMemo(
     () => aggregate(book?.orders ?? [], "ask", wei(tick) ?? 1n),
     [book, tick],
@@ -45,13 +53,14 @@ export function OrderBook({
             width: `${Number((BigInt(l.valueWei) * 10000n) / max) / 100}%`,
           }}
         />
-        <span>{eth(l.priceWei)}</span>
+        <span className="book-price"><Image src="/token-logos/ETH.png" alt="" width={13} height={13} />{eth(l.priceWei)}</span>
         <span>{l.quantity}</span>
         <span>{l.cumulativeQuantity}</span>
         <span title={`Cumulative ETH: ${eth(l.cumulativeValueWei)}`}>
           {eth(l.valueWei)}
         </span>
         <span>{eth(l.cumulativeValueWei)}</span>
+        <span className="book-usd" title="Indicative USD value">{asUsd(l.valueWei)}</span>
       </button>
     ));
   }
@@ -69,16 +78,18 @@ export function OrderBook({
           </select>
         </label>
       </div>
+      <div className="book-scroll"><div className="book-scroll__inner">
       <div className="book-side-label negative">
         <span>SELL / ASK</span>
         <span>{asks.length} levels</span>
       </div>
       <div className="book-columns">
-        <span>Price / ETH</span>
+        <span className="book-price"><Image src="/token-logos/ETH.png" alt="" width={13} height={13} />Price / ETH</span>
         <span>Qty</span>
         <span>Σ Qty</span>
         <span>Value</span>
         <span>Σ ETH</span>
+        <span>Value / USD</span>
       </div>
       {loading && !book ? (
         <BookSkeleton />
@@ -113,6 +124,7 @@ export function OrderBook({
             : "No valid collection-wide WETH offers"}
         </div>
       )}
+      </div></div>
       <div className="book-foot">
         <label>
           Levels{" "}
@@ -146,7 +158,9 @@ export function OrderBook({
       <p className="t-note">
         Best prices refer to fetched orders only. Snapshot read:{" "}
         {book?.updatedAt ? new Date(book.updatedAt).toLocaleTimeString() : "�"}.
-        Depth shows advertised ETH value at each level. Σ = cumulative.{" "}
+        Depth shows advertised ETH value at each level. USD is indicative at
+        {ethUsd.priceUsd ? " ETH/USD $" + ethUsd.priceUsd.toLocaleString("en-US", { maximumFractionDigits: 2 }) : " an unavailable ETH/USD quote"}.
+        Σ = cumulative.{" "}
         {book?.excluded ?? 0} unsupported orders excluded. {book?.bidScope}
       </p>
     </section>

@@ -1,8 +1,16 @@
-import { Star } from "lucide-react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { Pause, Play, Star } from "lucide-react";
 import { eth, price } from "@/lib/quant/book";
 import type { Book, Collection, Stats } from "@/types/market";
 
 export function CollectionPriceTape({ collection, stats, book, slug }: { collection: Collection | null; stats: Stats | null; book: Book | null; slug: string }) {
+  const [playing, setPlaying] = useState(false);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => { if (active) setPlaying(!window.matchMedia("(prefers-reduced-motion: reduce)").matches); });
+    return () => { active = false; };
+  }, []);
   const name = collection?.name ?? slug;
   const quotes = [
     { label: "FLOOR", value: price(stats?.floor), currency: "ETH", side: "ask" },
@@ -21,7 +29,7 @@ export function CollectionPriceTape({ collection, stats, book, slug }: { collect
       <strong>{name}</strong>
     </span>
     {quotes.map((quote) => <span key={quote.label} className={`collection-tape__quote collection-tape__quote--${quote.side}`}>
-      <small>{quote.label}</small><b>{quote.value}</b><em>{quote.currency}</em>
+      <small>{quote.label}</small><b>{quote.value}</b><em>{quote.currency === "ETH" || quote.currency === "WETH" ? <Image src="/token-logos/ETH.png" alt="" width={13} height={13} /> : null}{quote.currency}</em>
     </span>)}
   </div>;
   return <div className="collection-tape" aria-label={`Running collection prices for ${name}`}>
@@ -32,7 +40,8 @@ export function CollectionPriceTape({ collection, stats, book, slug }: { collect
       ) : <Star size={17} aria-hidden="true" />}
       <span>MARKET TAPE</span>
     </span>
-    <div className="collection-tape__viewport"><div className="collection-tape__track">{series(false)}{series(true)}</div></div>
+    <div className="collection-tape__viewport"><div className={`collection-tape__track ${playing ? "motion-enabled" : "is-paused"}`}>{series(false)}{series(true)}</div></div>
     <span className="collection-tape__time">{book?.updatedAt ? `BOOK ${new Date(book.updatedAt).toLocaleTimeString()}` : "LOADING"}</span>
+    <button className="collection-tape__control" type="button" aria-label={playing ? "Pause price ticker" : "Play price ticker"} onClick={() => setPlaying((value) => !value)}>{playing ? <Pause size={14} /> : <Play size={14} />}</button>
   </div>;
 }

@@ -6,6 +6,7 @@ let health: Health = {
   lastSuccess: null,
   lastStatus: null,
   updatedAt: null,
+  rateLimit: null,
 };
 const pending = new Map<string, Promise<unknown>>();
 const cache = new Map<string, { expires: number; value: unknown }>();
@@ -22,6 +23,14 @@ export class MarketError extends Error {
 }
 export function getHealth() {
   return { ...health };
+}
+function readRateLimit(response: Response, observedAt: string): Health["rateLimit"] {
+  const limit = Number(response.headers.get("x-ratelimit-limit"));
+  const remaining = Number(response.headers.get("x-ratelimit-remaining"));
+  if (!response.headers.has("x-ratelimit-limit") || !response.headers.has("x-ratelimit-remaining") ||
+      !Number.isSafeInteger(limit) || !Number.isSafeInteger(remaining) || limit <= 0 || remaining < 0 || remaining > limit) return null;
+  const reset = Number(response.headers.get("x-ratelimit-reset"));
+  return { limit, remaining, resetAt: Number.isSafeInteger(reset) && reset > 0 && reset < 8_640_000_000_000 ? new Date(reset * 1000).toISOString() : null, observedAt };
 }
 export async function request<T = unknown>(
   path: string,
@@ -69,6 +78,8 @@ export async function request<T = unknown>(
       );
     }
     const time = new Date().toISOString();
+    const rateLimit = readRateLimit(response, time);
+    health = { ...health, rateLimit };
     if (!response.ok) {
       const state =
         response.status === 401 || response.status === 403
@@ -103,6 +114,7 @@ export async function request<T = unknown>(
         lastSuccess: time,
         lastStatus: response.status,
         updatedAt: time,
+        rateLimit,
       };
     const value = (await response.json()) as T;
     if (key && ttl > 0) {

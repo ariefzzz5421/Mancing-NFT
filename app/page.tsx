@@ -1,4 +1,4 @@
-import { Terminal } from "@/components/terminal/Terminal";
+import { MarketOverview } from "@/components/dashboard/MarketOverview";
 export default function Home() {
-  return <Terminal />;
+  return <MarketOverview />;
 }

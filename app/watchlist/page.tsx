@@ -5,6 +5,7 @@ import { Pencil, Star, Trash2 } from "lucide-react";
 import { useWatchlist } from "@/lib/watchlist";
 import { useWallet } from "@/components/wallet/WalletProvider";
 import { CollectionSearch } from "@/components/terminal/CollectionSearch";
+import { WatchlistPicker, WatchlistStar, type WatchlistCandidate } from "@/components/watchlist/WatchlistPicker";
 
 export default function Page() {
   const watchlist = useWatchlist();
@@ -16,7 +17,8 @@ export default function Page() {
   const [editingName, setEditingName] = useState("");
   const [inputError, setInputError] = useState("");
   const [notice, setNotice] = useState("");
-  const visible = selectedGroup ? watchlist.items.filter((item) => item.groupId === selectedGroup) : watchlist.items;
+  const [pending, setPending] = useState<WatchlistCandidate | null>(null);
+  const visible = selectedGroup === null ? watchlist.items : watchlist.items.filter((item) => selectedGroup === "default" ? item.groupId === null : item.groupId === selectedGroup);
 
   function add(event: React.FormEvent) {
     event.preventDefault();
@@ -25,7 +27,7 @@ export default function Page() {
       setInputError("Enter a valid OpenSea collection slug.");
       return;
     }
-    watchlist.upsertItem({ slug: clean, chain: "ethereum", groupId: selectedGroup });
+    setPending({ slug: clean, chain: "ethereum" });
     setSlug("");
     setInputError("");
   }
@@ -60,7 +62,7 @@ export default function Page() {
         <label htmlFor="watchlist-slug">Add collection by OpenSea slug</label>
         <div>
           <input id="watchlist-slug" value={slug} onChange={(event) => setSlug(event.target.value)} placeholder="e.g. pudgypenguins" />
-          <button className="t-button t-primary" type="submit"><Star size={15} aria-hidden="true" /> Add collection</button>
+          <button className="t-button t-primary" type="submit"><Star size={15} aria-hidden="true" /> Choose group</button>
         </div>
       </form>
       <form className="watchlist-add" onSubmit={(event) => void createGroup(event)}>
@@ -81,9 +83,10 @@ export default function Page() {
     </div>
     <div className="watchlist-groups" role="tablist" aria-label="Watchlist groups">
       <button type="button" role="tab" aria-selected={!selectedGroup} className={!selectedGroup ? "is-active" : ""} onClick={() => setSelectedGroup(null)}>All <span>{watchlist.items.length}</span></button>
+      <button type="button" role="tab" aria-selected={selectedGroup === "default"} className={selectedGroup === "default" ? "is-active" : ""} onClick={() => setSelectedGroup("default")}>Default <span>{watchlist.items.filter((item) => item.groupId === null).length}</span></button>
       {watchlist.groups.map((group) => <button type="button" role="tab" aria-selected={selectedGroup === group.id} className={selectedGroup === group.id ? "is-active" : ""} onClick={() => setSelectedGroup(group.id)} key={group.id}>{group.name} <span>{watchlist.items.filter((item) => item.groupId === group.id).length}</span></button>)}
     </div>
-    {selectedGroup && <div className="watchlist-group-actions">
+    {selectedGroup && selectedGroup !== "default" && <div className="watchlist-group-actions">
       {editingId === selectedGroup ? <form onSubmit={(event) => void renameGroup(event)}>
         <input aria-label="Rename group" maxLength={60} value={editingName} onChange={(event) => setEditingName(event.target.value)} />
         <button className="t-button" type="submit">Save name</button>
@@ -101,14 +104,15 @@ export default function Page() {
         </Link>
         <div className="watchlist-entry__controls">
           <select aria-label={`Group for ${item.name ?? item.slug}`} value={item.groupId ?? ""} onChange={(event) => watchlist.assignGroup(item.slug, item.chain, event.target.value || null)}>
-            <option value="">Ungrouped</option>
+            <option value="">Default</option>
             {watchlist.groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
           </select>
-          <button className="watchlist-star is-active" aria-label={`Remove ${item.name ?? item.slug} from watchlist`} title="Remove from watchlist" onClick={() => watchlist.removeItem(item.slug, item.chain)}><Star size={19} fill="currentColor" aria-hidden="true" /></button>
+          <WatchlistStar item={{ slug: item.slug, chain: item.chain, name: item.name, imageUrl: item.imageUrl }} />
         </div>
       </div>)}
       {watchlist.hydrated && !visible.length && <div className="ledger-empty">{selectedGroup ? "No collections in this group yet. Add one above or assign an existing collection." : "Find a collection and select the star to watch it."}</div>}
     </div>
     <p className="t-note">Storage: {watchlist.storage}. A wallet signature signs you in; it does not submit a transaction.</p>
+    {pending && <WatchlistPicker item={pending} initialGroupId={selectedGroup && selectedGroup !== "default" ? selectedGroup : null} onClose={() => setPending(null)} />}
   </main>;
 }

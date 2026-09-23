@@ -105,10 +105,14 @@ export function Settings() {
                   : "No successful probe"}
               </dd>
             </div>
+            <div>
+              <dt>OpenSea request quota</dt>
+              <dd>{health?.rateLimit ? `${(health.rateLimit.limit - health.rateLimit.remaining).toLocaleString()} / ${health.rateLimit.limit.toLocaleString()}` : "Not provided by OpenSea"}</dd>
+            </div>
+            {health?.rateLimit?.resetAt && <div><dt>Quota resets</dt><dd>{new Date(health.rateLimit.resetAt).toLocaleString()}</dd></div>}
           </dl>
           <p className="t-note">
-            Hidden tabs pause market refresh. Rate-limit and authentication
-            errors trigger a 30-second cooldown per server instance.
+            Quota is read from OpenSea response headers for one API key and its current window. Hidden tabs pause market refresh. Rate-limit and authentication errors trigger a 30-second cooldown per server instance.
           </p>
         </section>
         <section className="t-panel">

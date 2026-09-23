@@ -1,4 +1,5 @@
 import { eth, spread } from "@/lib/quant/book";
+import Image from "next/image";
 export function SpreadPanel({ bid, ask }: { bid?: string; ask?: string }) {
   const s = spread(bid, ask);
   return (
@@ -13,7 +14,7 @@ export function SpreadPanel({ bid, ask }: { bid?: string; ask?: string }) {
           <span>{label}</span>
           <strong className={color}>{value}</strong>
           <small>
-            {label === "GROSS SPREAD" ? "Before trading costs" : "ETH"}
+            {label === "GROSS SPREAD" ? "Before trading costs" : <><Image src="/token-logos/ETH.png" alt="" width={13} height={13} /> ETH</>}
           </small>
         </div>
       ))}

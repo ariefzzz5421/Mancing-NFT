@@ -12,7 +12,7 @@ export function PrivyWalletProvider({ children, appId }: { children: React.React
     <PrivyProvider appId={appId} config={{
       loginMethods: ["wallet"],
       embeddedWallets: { ethereum: { createOnLogin: "off" } },
-      appearance: { theme: "dark", accentColor: "#22d3ee" },
+      appearance: { theme: "dark", accentColor: "#22d3ee", showWalletLoginFirst: true },
     }}>
       <PrivyWalletState>{children}</PrivyWalletState>
     </PrivyProvider>

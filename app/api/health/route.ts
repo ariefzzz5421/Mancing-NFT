@@ -1,4 +1,4 @@
-import { request, MarketError } from "@/lib/opensea/client";
+import { request, MarketError, getHealth } from "@/lib/opensea/client";
 let lastSuccess: string | null = null;
 export async function GET() {
   const results = await Promise.allSettled([
@@ -26,7 +26,7 @@ export async function GET() {
   const updatedAt = new Date().toISOString();
   if (!failures.length) lastSuccess = updatedAt;
   return Response.json(
-    { state, lastStatus, lastSuccess, updatedAt },
+    { state, lastStatus, lastSuccess, updatedAt, rateLimit: getHealth().rateLimit },
     {
       headers: { "Cache-Control": "no-store" },
     },

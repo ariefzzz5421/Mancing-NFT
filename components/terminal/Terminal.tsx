@@ -9,10 +9,9 @@ import { NetEdgeCalculator } from "./NetEdgeCalculator";
 import { SweepCalculator, LiquidityPanel } from "./SweepCalculator";
 import { PriceHistoryChart } from "./PriceHistoryChart";
 import { CollectionPriceTape } from "./CollectionPriceTape";
-import { Star } from "lucide-react";
+import { WatchlistStar } from "@/components/watchlist/WatchlistPicker";
 import { eth } from "@/lib/quant/book";
 import type { Book, Collection, Stats, Level, Side } from "@/types/market";
-import { useWatchlist } from "@/lib/watchlist";
 export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
   const [collection, setCollection] = useState<Collection | null>(null),
     [stats, setStats] = useState<Stats | null>(null),
@@ -26,7 +25,6 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
     [mode, setMode] = useState<"BUY" | "OFFER" | "LIST">("OFFER"),
     [selected, setSelected] = useState(""),
     [selectedOrder, setSelectedOrder] = useState<string | null>(null);
-  const watchlist = useWatchlist();
   const load = useCallback(
     async (signal?: AbortSignal) => {
       setLoading(true);
@@ -93,28 +91,8 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
             Trading terminal<span className="heading-dot">.</span>
           </h1>
         </div>
-        <button
-          className={`watchlist-star terminal-star ${watchlist.byKey.has(`ethereum:${slug}`) ? "is-active" : ""}`}
-          aria-label={watchlist.byKey.has(`ethereum:${slug}`) ? "Remove collection from watchlist" : "Add collection to watchlist"}
-          title={watchlist.byKey.has(`ethereum:${slug}`) ? "Remove from watchlist" : "Add to watchlist"}
-          onClick={() => {
-            if (watchlist.byKey.has(`ethereum:${slug}`)) {
-              watchlist.removeItem(slug, "ethereum");
-              return;
-            }
-            watchlist.upsertItem({
-              slug,
-              name: collection?.name ?? slug,
-              chain: "ethereum",
-              imageUrl: collection?.image ?? null,
-            });
-          }}
-        >
-          <Star size={18} fill={watchlist.byKey.has(`ethereum:${slug}`) ? "currentColor" : "none"} aria-hidden="true" />
-          <span>{watchlist.byKey.has(`ethereum:${slug}`) ? "Watchlisted" : "Watch collection"}</span>
-        </button>
+        <WatchlistStar item={{ slug, chain: "ethereum", name: collection?.name ?? slug, imageUrl: collection?.image }} className="terminal-star" showText />
       </div>
-      {watchlist.syncError && <p className="t-error" role="alert">{watchlist.syncError}</p>}
       <CollectionSearch />
       <CollectionPriceTape collection={collection} stats={stats} book={book} slug={slug} />
       <SpreadPanel

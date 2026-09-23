@@ -2,7 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, RefreshCw, Star } from "lucide-react";
+import { ExternalLink, RefreshCw } from "lucide-react";
+import { WatchlistStar } from "@/components/watchlist/WatchlistPicker";
 import { ActivityTable } from "@/components/collection/ActivityTable";
 import { BidSupportCard } from "@/components/BidSupportCard";
 import { CollectionSummary } from "@/components/CollectionSummary";
@@ -96,7 +97,6 @@ export function CollectionDetailPage({ chain, slug }: CollectionDetailPageProps)
     addWallet,
     byKey,
     hydrated,
-    removeItem,
     removeWallet,
     updateTargetFloors,
     upsertItem,
@@ -313,21 +313,6 @@ export function CollectionDetailPage({ chain, slug }: CollectionDetailPageProps)
     }
   }
 
-  function toggleWatchlist() {
-    if (watchlistItem) {
-      removeItem(slug, chain);
-      return;
-    }
-
-    upsertItem({
-      chain,
-      imageUrl: data?.collection.imageUrl,
-      name: data?.collection.name,
-      slug,
-      targetFloors: activeTargets,
-    });
-  }
-
   return (
     <main className="app-main text-slate-100">
       <div className="app-frame collection-shell">
@@ -361,16 +346,7 @@ export function CollectionDetailPage({ chain, slug }: CollectionDetailPageProps)
                 <RefreshCw size={15} aria-hidden="true" />
                 Refresh
               </button>
-              {hydrated ? (
-                <button
-                  className="button button--primary"
-                  onClick={toggleWatchlist}
-                  type="button"
-                >
-                  <Star size={15} fill={watchlistItem ? "currentColor" : "none"} aria-hidden="true" />
-                  {watchlistItem ? "Watchlisted" : "Watch collection"}
-                </button>
-              ) : null}
+              {hydrated ? <WatchlistStar item={{ chain, slug, name: data?.collection.name, imageUrl: data?.collection.imageUrl }} showText /> : null}
             </div>
           </div>
           <div className="collection-toolbar__meta">

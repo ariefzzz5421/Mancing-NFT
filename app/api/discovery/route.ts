@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { normalizeCollectionLeaderboard } from "@/lib/discovery";
+import { normalizeStats } from "@/lib/opensea/normalize";
+import { request } from "@/lib/opensea/client";
 import {
   fetchCollectionsBySales,
   fetchTopCollections,
@@ -50,12 +52,23 @@ export async function GET() {
     warnings,
   };
 
+  // Trending returns collection metadata, not trading statistics. Enrich only
+  // the visible lead rows and keep nulls when OpenSea cannot supply stats.
+  const lead = payload.trending.slice(0, 8);
+  const leadStats = await Promise.allSettled(lead.map((item) => request(`/collections/${encodeURIComponent(item.slug)}/stats`, 120)));
+  payload.trending = payload.trending.map((item, index) => {
+    const result = leadStats[index];
+    if (!result || result.status !== "fulfilled") return item;
+    const stats = normalizeStats(result.value);
+    return { ...item, floor: stats.floor, volume24h: stats.volume, sales24h: stats.sales, owners: stats.owners };
+  });
+
   const status = payload.top.length > 0 || payload.trending.length > 0 ? 200 : 502;
 
   return NextResponse.json(payload, {
     status,
     headers: {
-      "Cache-Control": "no-store",
+      "Cache-Control": "public, s-maxage=120, stale-while-revalidate=180",
     },
   });
 }

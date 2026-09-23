@@ -60,4 +60,10 @@ export type Health = {
   lastSuccess: string | null;
   lastStatus: number | null;
   updatedAt: string | null;
+  rateLimit: {
+    limit: number;
+    remaining: number;
+    resetAt: string | null;
+    observedAt: string;
+  } | null;
 };
