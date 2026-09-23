@@ -25,6 +25,7 @@ export function Navigation() {
             ["/positions", "Positions"],
             ["/watchlist", "Watchlist"],
             ["/wallet", "Wallet"],
+            ["/wallets", "Wallet Tracker"],
             ["/settings", "Settings"],
           ].map(([href, label]) => (
             <Link

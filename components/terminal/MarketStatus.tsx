@@ -1,28 +1,19 @@
 "use client";
 import { useEffect, useState } from "react";
 import type { Health } from "@/types/market";
+import type { MarketPricesResponse } from "@/lib/types";
+import { TokenLogo } from "@/components/TokenLogo";
 export function MarketStatus() {
   const [health, setHealth] = useState<Health | null>(null),
-    [eth, setEth] = useState<number | null>(null),
+    [prices, setPrices] = useState<MarketPricesResponse | null>(null),
     [gas, setGas] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
     async function load() {
       if (document.hidden) return;
-      const results = await Promise.allSettled([
-        fetch("/api/health").then((r) => r.json()),
-        fetch("/api/market/prices").then((r) => r.json()),
-        fetch("/api/network").then((r) => r.json()),
-      ]);
-      if (!active) return;
-      if (results[0].status === "fulfilled") setHealth(results[0].value);
-      if (results[1].status === "fulfilled")
-        setEth(
-          results[1].value.assets?.find(
-            (a: { symbol: string }) => a.symbol === "ETH",
-          )?.priceUsd || null,
-        );
-      if (results[2].status === "fulfilled") setGas(results[2].value.gasGwei);
+      void fetch("/api/health").then((r) => r.json()).then((value: Health) => { if (active) setHealth(value); }).catch(() => {});
+      void fetch("/api/market/prices").then((r) => r.json()).then((value: MarketPricesResponse) => { if (active) setPrices(value); }).catch(() => {});
+      void fetch("/api/network").then((r) => r.json()).then((value: { gasGwei: string | null }) => { if (active) setGas(value.gasGwei); }).catch(() => {});
     }
     void load();
     const id = setInterval(load, 60000);
@@ -31,7 +22,18 @@ export function MarketStatus() {
       clearInterval(id);
     };
   }, []);
-  return (
+  const eth = prices?.assets.find((asset) => asset.symbol === "ETH")?.priceUsd ?? null;
+  return (<>
+    <div className="major-prices" aria-label="Major crypto prices in USD">
+      {(["BTC", "ETH", "HYPE", "SOL", "BNB", "APE"] as const).map((symbol) => {
+        const asset = prices?.assets.find((item) => item.symbol === symbol);
+        return <div className="major-price" key={symbol} title={asset?.lastUpdated ? `Source: ${asset.source} · updated ${new Date(asset.lastUpdated).toLocaleTimeString()}` : "Price unavailable"}>
+          <TokenLogo symbol={symbol} className="major-price__logo" />
+          <span>{symbol}</span><strong>{asset?.priceUsd ? `$${asset.priceUsd.toLocaleString("en-US", { maximumFractionDigits: asset.priceUsd < 1 ? 4 : 2 })}` : "—"}</strong>
+          {asset?.change24h != null && <small className={asset.change24h >= 0 ? "positive" : "negative"}>{asset.change24h >= 0 ? "+" : ""}{asset.change24h.toFixed(2)}%</small>}
+        </div>;
+      })}
+    </div>
     <div className="market-status">
       <span>
         ETH{" "}
@@ -63,5 +65,5 @@ export function MarketStatus() {
         </b>
       </span>
     </div>
-  );
+  </>);
 }

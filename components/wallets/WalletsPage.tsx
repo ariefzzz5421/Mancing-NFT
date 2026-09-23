@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState, type FormEvent } from "react";
 import { WalletCards } from "lucide-react";
 import { TrackedWalletsPanel } from "@/components/wallets/TrackedWalletsPanel";
 import { useWatchlist } from "@/lib/watchlist";
@@ -9,6 +10,19 @@ import { NetworkBadge } from "@/components/NetworkBadge";
 
 export function WalletsPage() {
   const { addWallet, hydrated, items, removeWallet } = useWatchlist();
+  const [selected, setSelected] = useState("");
+  const [address, setAddress] = useState("");
+  const [label, setLabel] = useState("");
+  const [error, setError] = useState("");
+  function addTracked(event: FormEvent) {
+    event.preventDefault();
+    const item = items.find((value) => `${value.chain}:${value.slug}` === selected) ?? items[0];
+    if (!item) { setError("Add a collection to your watchlist first."); return; }
+    if (!/^0x[a-fA-F0-9]{40}$/.test(address.trim())) { setError("Enter a valid EVM wallet address."); return; }
+    if (!label.trim()) { setError("Enter a wallet label."); return; }
+    addWallet(item.slug, { address: address.trim(), label: label.trim() }, item.chain);
+    setAddress(""); setLabel(""); setError("");
+  }
 
   return (
     <main className="app-main">
@@ -26,6 +40,18 @@ export function WalletsPage() {
             </div>
           </div>
         </header>
+
+        <form className="wallet-tracker-add" onSubmit={addTracked}>
+          <div><strong>Track a wallet</strong><p>Give it a label and associate it with a saved collection. Its NFT feed covers the wallet on that chain.</p></div>
+          <select aria-label="Collection" value={selected || (items[0] ? `${items[0].chain}:${items[0].slug}` : "")} onChange={(event) => setSelected(event.target.value)}>
+            {!items.length && <option value="">Add a watchlist collection first</option>}
+            {items.map((item) => <option key={`${item.chain}:${item.slug}`} value={`${item.chain}:${item.slug}`}>{item.name ?? item.slug} · {item.chain}</option>)}
+          </select>
+          <input aria-label="Wallet address" placeholder="0x wallet address" value={address} onChange={(event) => setAddress(event.target.value)} />
+          <input aria-label="Wallet label" placeholder="e.g. Treasury" value={label} onChange={(event) => setLabel(event.target.value)} />
+          <button className="button button--primary" type="submit" disabled={!items.length}>Add wallet</button>
+          {error && <p className="t-error" role="alert">{error}</p>}
+        </form>
 
         {hydrated && items.length === 0 ? (
           <section className="empty-state">

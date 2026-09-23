@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, BadgeCheck, RefreshCw } from "lucide-react";
 import { CollectionSearch } from "@/components/terminal/CollectionSearch";
 import { WatchlistStar } from "@/components/watchlist/WatchlistPicker";
+import { ChainLogo } from "@/components/ChainLogo";
 import type { CollectionDiscoveryResponse, MarketCollection } from "@/lib/types";
 
 function metric(value: number | null, decimals = 2) {
@@ -71,7 +72,7 @@ export function MarketOverview() {
           {trending.length ? trending.map((item) => <div className="overview-trend-row" key={item.slug}>
             <span className="overview-rank">{String(item.rank).padStart(2, "0")}</span>
             <Link className="overview-collection" href={href(item)} target={item.analyzable ? undefined : "_blank"} rel={item.analyzable ? undefined : "noreferrer"}>
-              <CollectionArt item={item} /><span><strong>{item.name}{item.verified && <BadgeCheck size={14} aria-label="Verified" />}</strong><small>{item.chain.replaceAll("_", " ")}</small></span><ArrowUpRight size={15} aria-hidden="true" />
+              <CollectionArt item={item} /><span><strong>{item.name}{item.verified && <BadgeCheck size={14} aria-label="Verified" />}</strong><small><ChainLogo chain={item.chain} />{item.chain === "robinhood" ? "Robinhood Chain" : item.chain.replaceAll("_", " ")}</small></span><ArrowUpRight size={15} aria-hidden="true" />
             </Link>
             <span className="overview-trend-metric"><small>FLOOR</small>{metric(item.floor, 4)} <em>{item.nativeSymbol}</em></span>
             <span className="overview-trend-metric"><small>24H VOL</small>{metric(item.volume24h, 2)} <em>{item.nativeSymbol}</em></span>
@@ -82,7 +83,7 @@ export function MarketOverview() {
         <aside className="t-panel overview-top" aria-labelledby="overview-top-title">
           <div className="panel-title"><span id="overview-top-title">02 / 24H VOLUME RANK</span></div>
           {top.map((item) => <Link className="overview-top-row" key={item.slug} href={href(item)} target={item.analyzable ? undefined : "_blank"} rel={item.analyzable ? undefined : "noreferrer"}>
-            <span>{String(item.rank).padStart(2, "0")}</span><CollectionArt item={item} /><strong>{item.name}</strong><ArrowUpRight size={14} aria-hidden="true" />
+            <span>{String(item.rank).padStart(2, "0")}</span><CollectionArt item={item} /><ChainLogo chain={item.chain} /><strong>{item.name}</strong><ArrowUpRight size={14} aria-hidden="true" />
           </Link>)}
           {!top.length && <div className="book-empty">Volume ranking unavailable.</div>}
           <p className="t-note">Trending is OpenSea’s activity ranking. A high rank does not imply a tradeable spread. Open a collection to inspect bids, asks and depth.</p>

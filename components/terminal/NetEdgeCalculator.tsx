@@ -5,10 +5,12 @@ export function NetEdgeCalculator({
   entry,
   exit,
   quantity,
+  ethUsd,
 }: {
   entry: string;
   exit: string;
   quantity: number;
+  ethUsd: number | null;
 }) {
   const [fee, setFee] = useState("1");
   const [royalty, setRoyalty] = useState("0");
@@ -40,6 +42,8 @@ export function NetEdgeCalculator({
         )
       : null;
   const gross = e && x ? spread(e.toString(), x.toString()) : null;
+  const grossValue = gross && Number.isSafeInteger(quantity) && quantity > 0 ? gross.absolute * BigInt(quantity) : null;
+  const usd = (value: bigint | null | undefined) => value != null && ethUsd ? `≈ $${((Number(value) / 1e18) * ethUsd).toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "USD —";
   return (
     <section className="t-panel">
       <div className="panel-title">
@@ -66,23 +70,23 @@ export function NetEdgeCalculator({
       <dl className="metric-list">
         <div>
           <dt>Gross spread before costs</dt>
-          <dd>{gross ? `${(gross.bps / 100).toFixed(2)}%` : "—"}</dd>
+          <dd>{gross ? `${(gross.bps / 100).toFixed(2)}%` : "—"}<small className="execution-usd">{grossValue === null ? "—" : `${eth(grossValue)} ETH · ${usd(grossValue)}`}</small></dd>
         </div>
         <div>
           <dt>Entry / offer</dt>
-          <dd>{entry || "—"} ETH</dd>
+          <dd>{entry || "—"} ETH<small className="execution-usd">{usd(e)}</small></dd>
         </div>
         <div>
           <dt>Expected exit / listing</dt>
-          <dd>{exit || "—"} ETH</dd>
+          <dd>{exit || "—"} ETH<small className="execution-usd">{usd(x)}</small></dd>
         </div>
         <div>
           <dt>Required capital</dt>
-          <dd>{eth(result?.capital)} ETH</dd>
+          <dd>{eth(result?.capital)} ETH<small className="execution-usd">{usd(result?.capital)}</small></dd>
         </div>
         <div>
           <dt>Estimated net proceeds</dt>
-          <dd>{eth(result?.proceeds)} ETH</dd>
+          <dd>{eth(result?.proceeds)} ETH<small className="execution-usd">{usd(result?.proceeds)}</small></dd>
         </div>
       </dl>
       <div className="edge-result">
@@ -92,7 +96,7 @@ export function NetEdgeCalculator({
         >
           {result ? `${(result.roiBps / 100).toFixed(2)}%` : "—"}
         </strong>
-        <span>{eth(result?.net)} ETH</span>
+        <span>{eth(result?.net)} ETH <small className="execution-usd">{usd(result?.net)}</small></span>
       </div>
       <p className="t-note">
         Editable cost assumptions, not a fee quote. Includes {quantity} NFT

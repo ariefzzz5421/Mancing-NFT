@@ -18,8 +18,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const [ethereum, apeChain] = await Promise.allSettled([
+      searchCollections(query, 8, "ethereum"),
+      searchCollections(query, 4, "ape_chain"),
+    ]);
+    if (ethereum.status === "rejected" && apeChain.status === "rejected") throw ethereum.reason;
+    const ethResults = ethereum.status === "fulfilled" ? normalizeCollectionSearch(ethereum.value, 8).map((item) => ({ ...item, chain: "ethereum", analyzable: true, nativeSymbol: "ETH" })) : [];
+    const apeResults = apeChain.status === "fulfilled" ? normalizeCollectionSearch(apeChain.value, 4).map((item) => ({ ...item, chain: "ape_chain", analyzable: true, nativeSymbol: "APE" })) : [];
     const payload: CollectionSearchResponse = {
-      results: normalizeCollectionSearch(await searchCollections(query), 8),
+      results: [...ethResults.slice(0, 6), ...apeResults.slice(0, 2), ...ethResults.slice(6)].filter((item, index, all) => all.findIndex((other) => other.slug === item.slug) === index).slice(0, 8),
       source: "opensea",
     };
 

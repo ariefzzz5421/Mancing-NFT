@@ -3,6 +3,18 @@
 import { useEffect, useState } from "react";
 import type { MarketPricesResponse, MarketSymbol } from "@/lib/types";
 
+let cachedMarketPrices: MarketPricesResponse | null = null;
+let marketPricesExpires = 0;
+let marketPricesRequest: Promise<MarketPricesResponse> | null = null;
+async function getMarketPrices() {
+  if (cachedMarketPrices && Date.now() < marketPricesExpires) return cachedMarketPrices;
+  if (!marketPricesRequest) marketPricesRequest = fetch("/api/market/prices")
+    .then(async (response) => { if (!response.ok) throw Error("Market prices unavailable"); return response.json() as Promise<MarketPricesResponse>; })
+    .then((data) => { cachedMarketPrices = data; marketPricesExpires = Date.now() + 55_000; return data; })
+    .finally(() => { marketPricesRequest = null; });
+  return marketPricesRequest;
+}
+
 type LiveEthPrice = {
   lastUpdated: string | null;
   loading: boolean;
@@ -33,8 +45,8 @@ export function useLiveAssetPrice(
 
     async function loadPrice() {
       try {
-        const response = await fetch("/api/market/prices");
-        const payload = (await response.json()) as MarketPricesResponse;
+        if (document.hidden) return;
+        const payload = await getMarketPrices();
         const asset = readAssetPrice(payload, symbol);
 
         if (cancelled) {
@@ -61,7 +73,7 @@ export function useLiveAssetPrice(
     }
 
     void loadPrice();
-    const interval = window.setInterval(loadPrice, 30_000);
+    const interval = window.setInterval(loadPrice, 60_000);
 
     return () => {
       cancelled = true;

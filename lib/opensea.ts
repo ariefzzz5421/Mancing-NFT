@@ -90,14 +90,14 @@ export function fetchTrendingCollections(limit = 20) {
   return fetchOpenSea<unknown>(`/collections/trending?${params.toString()}`);
 }
 
-export function searchCollections(query: string, limit = 8) {
+export function searchCollections(query: string, limit = 8, chain?: "ethereum" | "ape_chain") {
   const params = new URLSearchParams({
     asset_types: "collection",
     limit: String(Math.min(Math.max(limit, 1), 20)),
     query,
   });
-  params.append("chains", "ethereum");
-  params.append("chains", "ape_chain");
+  if (chain) params.append("chains", chain);
+  else { params.append("chains", "ethereum"); params.append("chains", "ape_chain"); }
 
   return fetchOpenSea<unknown>(`/search?${params.toString()}`);
 }

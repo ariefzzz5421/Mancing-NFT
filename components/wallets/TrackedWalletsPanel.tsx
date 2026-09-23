@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { ExternalLink, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { formatAddress, formatDateTime, formatNative, formatUsd } from "@/lib/format";
 import {
   getAddressExplorerUrl,
@@ -49,8 +50,20 @@ function WalletCard({
   const [data, setData] = useState<WalletApiResponse | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [visible, setVisible] = useState(false);
+  const cardRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    const target = cardRef.current;
+    if (!target) return;
+    if (!("IntersectionObserver" in window)) { queueMicrotask(() => setVisible(true)); return; }
+    const observer = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting)) { setVisible(true); observer.disconnect(); } }, { rootMargin: "200px" });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
     let cancelled = false;
 
     void Promise.resolve()
@@ -85,12 +98,12 @@ function WalletCard({
     return () => {
       cancelled = true;
     };
-  }, [chain, onData, wallet.address]);
+  }, [chain, onData, visible, wallet.address]);
 
   const chainConfig = getChainConfig(chain);
 
   return (
-    <article className="wallet-ledger__row">
+    <article className="wallet-ledger__row" ref={cardRef}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="truncate font-semibold text-white">{wallet.label}</h3>
@@ -107,7 +120,7 @@ function WalletCard({
         </button>
       </div>
 
-      {loading ? (
+      {loading && visible ? (
         <div className="mt-4 grid gap-2">
           <div className="h-4 w-2/3 rounded bg-slate-800" />
           <div className="h-4 w-1/2 rounded bg-slate-800" />
@@ -156,6 +169,9 @@ function WalletCard({
         <ExternalLink size={14} aria-hidden="true" />
         Open {chainConfig.explorerName}
       </a>
+      <Link className="button button--secondary mt-2" href={`/wallets/${encodeURIComponent(wallet.address)}?chain=${chain}`}>
+        View NFT activity feed
+      </Link>
     </article>
   );
 }

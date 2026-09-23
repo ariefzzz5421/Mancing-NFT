@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, ArrowUpRight, BadgeCheck } from "lucide-react";
 import type { MarketCollection } from "@/lib/types";
+import { ChainLogo } from "@/components/ChainLogo";
 export function CollectionSearch() {
   const router = useRouter();
   const container = useRef<HTMLDivElement>(null);
@@ -97,7 +98,7 @@ export function CollectionSearch() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={r.imageUrl} alt="" width={34} height={34} loading="lazy" />
                 ) : <span className="search-results__placeholder">{r.name.slice(0, 1)}</span>}
-                <span><strong>{r.name}</strong>{r.verified && <BadgeCheck size={14} aria-label="Verified" />}<small>{r.slug}</small></span>
+                <span><strong>{r.name}</strong>{r.verified && <BadgeCheck size={14} aria-label="Verified" />}<small><ChainLogo chain={r.chain} />{r.chain.replaceAll("_", " ")} · {r.slug}</small></span>
               </span>
               {opening === r.slug ? <span>Opening…</span> : <ArrowUpRight size={16} />}
             </button>

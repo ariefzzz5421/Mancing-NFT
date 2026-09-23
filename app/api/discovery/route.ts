@@ -52,15 +52,35 @@ export async function GET() {
     warnings,
   };
 
-  // Trending returns collection metadata, not trading statistics. Enrich only
-  // the visible lead rows and keep nulls when OpenSea cannot supply stats.
-  const lead = payload.trending.slice(0, 8);
-  const leadStats = await Promise.allSettled(lead.map((item) => request(`/collections/${encodeURIComponent(item.slug)}/stats`, 120)));
-  payload.trending = payload.trending.map((item, index) => {
-    const result = leadStats[index];
-    if (!result || result.status !== "fulfilled") return item;
-    const stats = normalizeStats(result.value);
-    return { ...item, floor: stats.floor, volume24h: stats.volume, sales24h: stats.sales, owners: stats.owners };
+  // Reuse metrics already present in the leaderboard. Limit additional stats
+  // calls and batch them in pairs to avoid a burst against the OpenSea key.
+  const topBySlug = new Map(payload.top.map((item) => [item.slug, item]));
+  payload.trending = payload.trending.map((item) => {
+    const top = topBySlug.get(item.slug);
+    return top ? { ...item, floor: item.floor ?? top.floor, volume24h: item.volume24h ?? top.volume24h, sales24h: item.sales24h ?? top.sales24h, owners: item.owners ?? top.owners } : item;
+  });
+  const needsStats = [...payload.trending.slice(0, 4), ...payload.top.slice(0, 2)]
+    .filter((item, index, items) => items.findIndex((candidate) => candidate.slug === item.slug) === index)
+    .filter((item) => item.floor === null || item.volume24h === null);
+  const statsBySlug = new Map<string, ReturnType<typeof normalizeStats>>();
+  let statsUnavailable = false;
+  for (let index = 0; index < needsStats.length; index += 2) {
+    const pair = needsStats.slice(index, index + 2);
+    const results = await Promise.allSettled(pair.map((item) => request(`/collections/${encodeURIComponent(item.slug)}/stats`, 300)));
+    results.forEach((result, pairIndex) => {
+      if (result.status === "fulfilled") statsBySlug.set(pair[pairIndex].slug, normalizeStats(result.value));
+      else statsUnavailable = true;
+    });
+    if (results.every((result) => result.status === "rejected")) break;
+  }
+  if (statsUnavailable) warnings.push("Some collection metrics are temporarily unavailable from OpenSea.");
+  payload.top = payload.top.map((item) => {
+    const stats = statsBySlug.get(item.slug);
+    return stats ? { ...item, floor: item.floor ?? stats.floor, volume24h: item.volume24h ?? stats.volume, sales24h: item.sales24h ?? stats.sales, owners: item.owners ?? stats.owners } : item;
+  });
+  payload.trending = payload.trending.map((item) => {
+    const stats = statsBySlug.get(item.slug);
+    return stats ? { ...item, floor: item.floor ?? stats.floor, volume24h: item.volume24h ?? stats.volume, sales24h: item.sales24h ?? stats.sales, owners: item.owners ?? stats.owners } : item;
   });
 
   const status = payload.top.length > 0 || payload.trending.length > 0 ? 200 : 502;

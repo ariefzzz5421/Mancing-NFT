@@ -8,7 +8,14 @@ import type {
 const COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3/simple/price";
 const YAHOO_BASE_URL = "https://query1.finance.yahoo.com/v8/finance/chart";
 
-const MARKET_ASSETS = [{coingeckoId: "ethereum",name: "Ethereum",symbol: "ETH",yahooTicker: "ETH-USD"}] as const;
+const MARKET_ASSETS = [
+  { coingeckoId: "bitcoin", name: "Bitcoin", symbol: "BTC", yahooTicker: "BTC-USD" },
+  { coingeckoId: "ethereum", name: "Ethereum", symbol: "ETH", yahooTicker: "ETH-USD" },
+  { coingeckoId: "hyperliquid", name: "Hyperliquid", symbol: "HYPE", yahooTicker: null },
+  { coingeckoId: "solana", name: "Solana", symbol: "SOL", yahooTicker: "SOL-USD" },
+  { coingeckoId: "binancecoin", name: "BNB", symbol: "BNB", yahooTicker: "BNB-USD" },
+  { coingeckoId: "apecoin", name: "ApeCoin", symbol: "APE", yahooTicker: null },
+] as const;
 
 function readNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -55,7 +62,7 @@ async function fetchCoinGeckoPrices(): Promise<MarketPricesResponse> {
   });
   const response = await fetch(`${COINGECKO_BASE_URL}?${params.toString()}`, {
     headers: { Accept: "application/json" },
-    next: { revalidate: 30 },
+    next: { revalidate: 60 },
   });
 
   if (!response.ok) {
@@ -92,12 +99,13 @@ async function fetchYahooSymbol(symbol: MarketSymbol): Promise<MarketAssetPrice>
   if (!asset) {
     throw new Error(`Unsupported market symbol ${symbol}.`);
   }
+  if (!asset.yahooTicker) throw new Error(`Yahoo fallback unavailable for ${symbol}.`);
 
   const response = await fetch(
     `${YAHOO_BASE_URL}/${asset.yahooTicker}?interval=1m&range=1d`,
     {
       headers: { Accept: "application/json" },
-      next: { revalidate: 30 },
+      next: { revalidate: 60 },
     },
   );
 

@@ -31,6 +31,7 @@ export function TradePanel({
   setMode,
   book,
   selectedOrder,
+  ethUsd,
 }: {
   collection: Collection | null;
   slug: string;
@@ -44,6 +45,7 @@ export function TradePanel({
   setMode: (s: "BUY" | "OFFER" | "LIST") => void;
   book: Book | null;
   selectedOrder: string | null;
+  ethUsd: number | null;
 }) {
   const wallet = useWallet(),
     [hours, setHours] = useState(24),
@@ -129,6 +131,7 @@ export function TradePanel({
       p && Number.isSafeInteger(quantity) && quantity > 0
         ? p * BigInt(mode === "LIST" ? 1 : quantity)
         : null;
+  const totalUsd = total && ethUsd ? (Number(total) / 1e18) * ethUsd : null;
   useEffect(() => {
     try {
       const p = JSON.parse(localStorage.getItem("mancing-preferences") ?? "{}");
@@ -375,9 +378,7 @@ export function TradePanel({
           </div>
           <div>
             <dt>Estimated total</dt>
-            <dd>
-              {eth(total)} {mode === "OFFER" ? "WETH" : "ETH"}
-            </dd>
+            <dd>{eth(total)} {mode === "OFFER" ? "WETH" : "ETH"}<small className="execution-usd">{totalUsd === null ? "USD —" : `≈ $${totalUsd.toLocaleString("en-US", { maximumFractionDigits: 2 })}`}</small></dd>
           </div>
           <div>
             <dt>Gas</dt>

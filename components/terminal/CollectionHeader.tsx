@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BadgeCheck, ExternalLink } from "lucide-react";
 import type { Collection, Stats, Book } from "@/types/market";
 import { eth, price } from "@/lib/quant/book";
+import { ChainLogo } from "@/components/ChainLogo";
 export function CollectionHeader({
   collection: c,
   stats: s,
@@ -17,7 +18,7 @@ export function CollectionHeader({
     <section className="t-panel terminal-collection-overview">
       <div className="panel-title">
         <span>01 / COLLECTION</span>
-        <span>{c?.chain ?? "—"}</span>
+        <span className="chain-inline">{c?.chain && <ChainLogo chain={c.chain} />}{c?.chain ?? "—"}</span>
       </div>
       <div className="collection-identity">
         {c?.image ? (
