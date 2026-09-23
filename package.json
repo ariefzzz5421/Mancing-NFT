@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@opensea/seaport-js": "^4.3.0",
-    "@privy-io/node": "^0.35.0",
     "@privy-io/react-auth": "^3.45.0",
     "@stripe/stripe-js": "^9.17.0",
     "@supabase/supabase-js": "^2.117.0",

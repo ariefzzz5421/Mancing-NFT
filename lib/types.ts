@@ -96,6 +96,13 @@ export type WatchlistItem = {
   notes?: string;
   targetFloors: number[];
   devWallets: TrackedWallet[];
+  groupId?: string | null;
+};
+
+export type WatchlistGroup = {
+  id: string;
+  name: string;
+  createdAt: string;
 };
 
 export type WalletTransaction = {

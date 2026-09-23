@@ -4,6 +4,7 @@ import { PrivyProvider, usePrivy, useWallets } from "@privy-io/react-auth";
 import { createPublicClient, custom, erc20Abi, formatEther, type Address, type EIP1193Provider } from "viem";
 import { mainnet } from "viem/chains";
 import { WETH } from "@/lib/web3/constants";
+import { restoreWatchlistSession, signInWatchlist, signOutWatchlist } from "@/lib/web3/watchlist-auth";
 import { Context, setPrivyProvider } from "./WalletProvider";
 
 export function PrivyWalletProvider({ children, appId }: { children: React.ReactNode; appId: string }) {
@@ -19,7 +20,7 @@ export function PrivyWalletProvider({ children, appId }: { children: React.React
 }
 
 function PrivyWalletState({ children }: { children: React.ReactNode }) {
-  const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
+  const { ready, authenticated, login, logout, getAccessToken } = usePrivy();
   const { wallets } = useWallets();
   const active = authenticated ? wallets[0] : undefined;
   const address = (active?.address as Address | undefined) ?? null;
@@ -28,11 +29,12 @@ function PrivyWalletState({ children }: { children: React.ReactNode }) {
   const [balance, setBalance] = useState<{ eth: string | null; weth: string | null }>({ eth: null, weth: null });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     let current = true;
     if (!active) {
-      queueMicrotask(() => { if (current) { setProvider(null); setPrivyProvider(null); setChain(null); setBalance({ eth: null, weth: null }); } });
+      queueMicrotask(() => { if (current) { setProvider(null); setPrivyProvider(null); setChain(null); setUserId(null); setBalance({ eth: null, weth: null }); } });
       return () => { current = false; };
     }
     active.getEthereumProvider().then((value) => {
@@ -40,6 +42,12 @@ function PrivyWalletState({ children }: { children: React.ReactNode }) {
       const walletProvider = value as EIP1193Provider;
       setProvider(walletProvider);
       setPrivyProvider(walletProvider);
+      const account = active.address as Address;
+      void restoreWatchlistSession(account).then(async (restored) => {
+        if (!current) return;
+        if (restored) setUserId(`wallet:${account.toLowerCase()}`);
+        else setUserId(await signInWatchlist(account, walletProvider));
+      }).catch((cause) => { if (current) setError(cause instanceof Error ? cause.message : "Wallet sign-in declined."); });
     }).catch(() => { if (current) setError("Wallet provider unavailable."); });
     return () => { current = false; setPrivyProvider(null); };
   }, [active]);
@@ -62,12 +70,21 @@ function PrivyWalletState({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { queueMicrotask(() => void refresh()); }, [refresh]);
 
+  const signIn = async () => {
+    if (!provider || !address) throw Error("Connect your wallet first.");
+    setBusy(true);
+    try { setUserId(await signInWatchlist(address, provider)); setError(""); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Wallet sign-in declined."); throw cause; }
+    finally { setBusy(false); }
+  };
+
   return <Context.Provider value={{
     address, chain, ...balance, error, busy,
-    userId: authenticated ? (user?.id ?? null) : null,
+    userId,
     getAccessToken,
+    signIn,
     connect: async () => { setBusy(true); setError(""); try { await login(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Wallet connection declined."); } finally { setBusy(false); } },
-    disconnect: () => { setPrivyProvider(null); void logout(); },
+    disconnect: () => { setPrivyProvider(null); setUserId(null); void signOutWatchlist(); void logout(); },
     refresh,
   }}>{ready ? children : <div className="terminal-page">Loading wallet connection…</div>}</Context.Provider>;
 }

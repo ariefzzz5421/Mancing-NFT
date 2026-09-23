@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { ExternalLink, RefreshCw, Star } from "lucide-react";
 import { ActivityTable } from "@/components/collection/ActivityTable";
 import { BidSupportCard } from "@/components/BidSupportCard";
 import { CollectionSummary } from "@/components/CollectionSummary";
@@ -367,8 +367,8 @@ export function CollectionDetailPage({ chain, slug }: CollectionDetailPageProps)
                   onClick={toggleWatchlist}
                   type="button"
                 >
-                  {watchlistItem ? <Trash2 size={15} aria-hidden="true" /> : <Plus size={15} aria-hidden="true" />}
-                  {watchlistItem ? "Remove watchlist" : "Add watchlist"}
+                  <Star size={15} fill={watchlistItem ? "currentColor" : "none"} aria-hidden="true" />
+                  {watchlistItem ? "Watchlisted" : "Watch collection"}
                 </button>
               ) : null}
             </div>

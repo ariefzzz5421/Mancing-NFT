@@ -1,13 +1,13 @@
 import "server-only";
-import { PrivyClient } from "@privy-io/node";
 import { createClient } from "@supabase/supabase-js";
-import type { WatchlistItem } from "@/lib/types";
+import type { WatchlistGroup, WatchlistItem } from "@/lib/types";
 import { parseSupportedChain } from "@/lib/chains";
+import { sessionAddress, walletAuthConfigured } from "@/lib/server/wallet-session";
 
 const projectUrl = "https://ecdbtggwqpvzljswjafe.supabase.co";
 
 export function watchlistConfigured() {
-  return Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.NEXT_PUBLIC_PRIVY_APP_ID && process.env.PRIVY_APP_SECRET);
+  return Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY && walletAuthConfigured());
 }
 
 export function databaseConfigured() {
@@ -21,22 +21,14 @@ export function database() {
 }
 
 export async function authenticatedOwner(request: Request) {
-  const token = request.headers.get("authorization")?.match(/^Bearer (.+)$/i)?.[1];
-  const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
-  const secret = process.env.PRIVY_APP_SECRET;
-  if (!token || !appId || !secret) return null;
-  try {
-    const claims = await new PrivyClient({ appId, appSecret: secret }).utils().auth().verifyAccessToken(token);
-    return claims.user_id;
-  } catch {
-    return null;
-  }
+  const address = sessionAddress(request);
+  return address ? `wallet:${address}` : null;
 }
 
 type WatchlistRow = {
   chain: string; slug: string; name: string | null; image_url: string | null;
   contract_address: string | null; notes: string | null; target_floors: unknown;
-  dev_wallets: unknown; added_at: string;
+  dev_wallets: unknown; added_at: string; group_id: string | null;
 };
 
 export function fromRow(row: WatchlistRow): WatchlistItem {
@@ -45,6 +37,7 @@ export function fromRow(row: WatchlistRow): WatchlistItem {
     name: row.name ?? undefined, imageUrl: row.image_url,
     contractAddress: row.contract_address, notes: row.notes ?? undefined,
     addedAt: row.added_at,
+    groupId: row.group_id,
     targetFloors: Array.isArray(row.target_floors)
       ? row.target_floors.filter((value): value is number => typeof value === "number" && Number.isFinite(value)) : [],
     devWallets: Array.isArray(row.dev_wallets)
@@ -64,10 +57,19 @@ export function validateItem(input: unknown): WatchlistItem | null {
     (item.imageUrl != null && (typeof item.imageUrl !== "string" || item.imageUrl.length > 2048)) ||
     (item.contractAddress != null && (typeof item.contractAddress !== "string" || !/^0x[a-f0-9]{40}$/i.test(item.contractAddress))) ||
     typeof item.addedAt !== "string" || !Number.isFinite(Date.parse(item.addedAt)) ||
+    (item.groupId != null && (typeof item.groupId !== "string" || !/^[0-9a-f-]{36}$/i.test(item.groupId))) ||
     !Array.isArray(item.targetFloors) || item.targetFloors.length > 20 ||
     !item.targetFloors.every((value) => typeof value === "number" && Number.isFinite(value) && value > 0) ||
     !Array.isArray(item.devWallets) || item.devWallets.length > 50 ||
     !item.devWallets.every((wallet) => wallet && typeof wallet.address === "string" && /^0x[a-f0-9]{40}$/i.test(wallet.address) && typeof wallet.label === "string" && wallet.label.length <= 100 && (wallet.notes == null || (typeof wallet.notes === "string" && wallet.notes.length <= 500)))
   ) return null;
   return item as WatchlistItem;
+}
+
+export function fromGroupRow(row: { id: string; name: string; created_at: string }): WatchlistGroup {
+  return { id: row.id, name: row.name, createdAt: row.created_at };
+}
+
+export function validGroupName(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length >= 1 && value.trim().length <= 60;
 }

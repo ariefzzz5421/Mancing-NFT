@@ -77,6 +77,7 @@ body {
   display: inline-flex;
   justify-content: center;
   align-items: center;
+  gap: 8px;
   min-height: 40px;
   padding: 8px 12px;
   border: 1px solid #324353;
@@ -1037,6 +1038,41 @@ body {
 .watchlist-add > div { display: flex; gap: 9px; }
 .watchlist-add input { flex: 1; min-width: 0; border: 1px solid var(--terminal-rule); background: var(--terminal-panel); color: var(--terminal-text); padding: 10px 12px; font: 13px var(--font-plex-mono); }
 .watchlist-entry > a { min-width: 0; overflow-wrap: anywhere; }
+.watchlist-toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.watchlist-toolbar .watchlist-add { min-width: 0; }
+.watchlist-toolbar .t-primary { width: auto; }
+.watchlist-session-note { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 12px; border: 1px solid var(--terminal-rule); padding: 10px 14px; color: var(--terminal-muted); }
+.watchlist-groups { display: flex; overflow-x: auto; gap: 5px; margin: 20px 0 0; border-bottom: 1px solid var(--terminal-rule); }
+.watchlist-groups button { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; min-height: 42px; padding: 8px 14px; border-bottom: 2px solid transparent; color: var(--terminal-muted); white-space: nowrap; }
+.watchlist-groups button.is-active { color: var(--terminal-accent); border-color: var(--terminal-accent); }
+.watchlist-groups button span { font: 11px var(--font-plex-mono); opacity: .7; }
+.watchlist-group-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 12px 0; }
+.watchlist-group-actions form { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.watchlist-group-actions input, .watchlist-entry select { min-height: 38px; min-width: 0; border: 1px solid var(--terminal-rule); background: var(--terminal-panel); color: var(--terminal-text); padding: 7px 9px; }
+.watchlist-group-actions > span { color: var(--terminal-muted); font-size: 11px; }
+.watchlist-entry__controls { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.watchlist-entry__controls select { max-width: 180px; }
+.watchlist-star { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; min-width: 40px; min-height: 40px; gap: 8px; border: 1px solid var(--terminal-rule); background: var(--terminal-panel); color: var(--terminal-muted); padding: 8px; cursor: pointer; }
+.watchlist-star:hover, .watchlist-star.is-active { border-color: #d5b866; color: #e9c974; }
+.terminal-star { padding: 8px 12px; font-size: 12px; font-weight: 600; }
+.collection-tape { display: flex; align-items: center; width: 100%; min-width: 0; height: 45px; margin: 16px 0; border: 1px solid var(--terminal-rule); background: #0a1118; font: 11px var(--font-plex-mono); overflow: hidden; }
+.collection-tape__badge { display: inline-flex; align-items: center; gap: 7px; height: 100%; flex: 0 0 auto; padding: 0 12px; border-right: 1px solid var(--terminal-rule); color: var(--terminal-accent); font-weight: 600; white-space: nowrap; }
+.collection-tape__badge img { width: 23px; height: 23px; object-fit: cover; border: 1px solid var(--terminal-rule); }
+.collection-tape__viewport { flex: 1; min-width: 0; overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 3%, #000 97%, transparent); }
+.collection-tape__track { display: flex; width: max-content; animation: collection-price-tape 32s linear infinite; }
+.collection-tape:hover .collection-tape__track { animation-play-state: paused; }
+.collection-tape__series { display: flex; align-items: center; gap: 22px; flex: 0 0 auto; padding: 0 22px 0 0; }
+.collection-tape__identity { display: inline-flex; align-items: center; gap: 8px; max-width: 220px; white-space: nowrap; color: var(--terminal-text); }
+.collection-tape__identity img { width: 25px; height: 25px; object-fit: cover; border: 1px solid var(--terminal-rule); }
+.collection-tape__identity strong { overflow: hidden; text-overflow: ellipsis; }
+.collection-tape__quote { display: inline-flex; align-items: baseline; gap: 7px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.collection-tape__quote small, .collection-tape__quote em { color: var(--terminal-muted); font-size: 10px; font-style: normal; }
+.collection-tape__quote b { color: var(--terminal-text); font-weight: 600; }
+.collection-tape__quote--bid b { color: var(--bid); }
+.collection-tape__quote--ask b { color: var(--ask); }
+.collection-tape__time { flex: 0 0 auto; padding: 0 12px; color: var(--terminal-muted); border-left: 1px solid var(--terminal-rule); white-space: nowrap; font-size: 10px; }
+@keyframes collection-price-tape { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .collection-tape__track { animation: none; } }
 .terminal-analytics { margin-top: 14px; }
 .price-history { padding: 16px; }
 .price-history__summary { display: flex; flex-wrap: wrap; gap: 16px 40px; padding: 13px 0; }
@@ -1047,6 +1083,12 @@ body {
 .price-history__state { display: flex; align-items: center; justify-content: center; min-height: 180px; color: var(--terminal-muted); gap: 12px; }
 .price-history .t-note { margin-bottom: 0; }
 @media (max-width: 700px) {
+  .watchlist-toolbar { grid-template-columns: 1fr; gap: 0; }
+  .watchlist-entry__controls { width: 100%; justify-content: space-between; }
+  .watchlist-entry__controls select { flex: 1; max-width: none; }
+  .collection-tape__time { display: none; }
+  .collection-tape__badge { padding: 0 8px; font-size: 9px; }
+  .terminal-star span { display: none; }
   .terminal-analytics { display: none; }
   .terminal-analytics.mobile-visible { display: block; }
   .price-history { padding: 12px; }
@@ -1054,6 +1096,6 @@ body {
   .price-history__summary { gap: 10px 20px; }
   .price-history__summary strong { font-size: 13px; }
   .watchlist-add > div { flex-direction: column; }
-  .watchlist-entry { align-items: flex-start; }
+  .watchlist-entry { align-items: flex-start; flex-direction: column; }
   .watchlist-entry > .t-button { flex: 0 0 auto; }
 }

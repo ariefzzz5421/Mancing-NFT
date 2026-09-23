@@ -23,7 +23,7 @@ npm ci
 Copy `.env.example` to `.env.local`, set `OPENSEA_API_KEY`, then run `npm run dev`.
 Optional `ETHEREUM_RPC_URL` supplies a server-only RPC; otherwise public Ethereum RPC is used. `ETHERSCAN_API_KEY` supports the existing wallet research tools. No server credential belongs in a `NEXT_PUBLIC_` variable.
 
-For account-backed watchlists, run `supabase/migrations/20260923_watchlist_items.sql` in the intended Supabase project and set `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_PRIVY_APP_ID`, and `PRIVY_APP_SECRET`. Configure the deployed site as an allowed origin in the Privy dashboard. The service-role key and Privy app secret must only be set in server environment variables. Without a configured Privy app, the existing injected-wallet connection and browser watchlist remain available. Settings shows the actual configuration state.
+For wallet-backed watchlists, run `supabase/migrations/20260923_watchlist_items.sql` and `supabase/migrations/20260923_watchlist_groups.sql` in the intended Supabase project. Set `SUPABASE_SERVICE_ROLE_KEY` and a random 32-byte or longer `WATCHLIST_SESSION_SECRET` on the server. A wallet signs a short-lived, site-bound sign-in message; an HttpOnly session cookie then scopes items and groups to that wallet. The service-role key and session secret must never be public. `NEXT_PUBLIC_PRIVY_APP_ID` remains optional for Privy-powered wallet connection; configure the deployed site as an allowed origin in Privy before enabling it. Settings shows the actual configuration state.
 
 ```sh
 npm run lint

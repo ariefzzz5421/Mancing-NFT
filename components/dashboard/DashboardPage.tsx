@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, Clock3, LoaderCircle, Plus, RefreshCw, Search } from "lucide-react";
+import { ArrowUpRight, Clock3, LoaderCircle, RefreshCw, Search, Star } from "lucide-react";
 import { CollectionSummary } from "@/components/CollectionSummary";
 import { CreatorActivityCard } from "@/components/CreatorActivityCard";
 import { ErrorState } from "@/components/ErrorState";
@@ -473,8 +473,8 @@ export function DashboardPage() {
               onClick={addToWatchlist}
               type="button"
             >
-              <Plus size={16} aria-hidden="true" />
-              Add to watchlist
+              <Star size={16} aria-hidden="true" />
+              Watch collection
             </button>
           </form>
         </section>

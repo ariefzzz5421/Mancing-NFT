@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useWallet } from "@/components/wallet/WalletProvider";
 import type { Health } from "@/types/market";
 import { Check, X } from "lucide-react";
-type Config = { supabase: { configured: boolean; operational: boolean }; privy: { configured: boolean }; rpc: { dedicated: boolean }; opensea: { configured: boolean } };
+type Config = { supabase: { configured: boolean; operational: boolean }; privy: { configured: boolean }; walletAuth: { configured: boolean }; rpc: { dedicated: boolean }; opensea: { configured: boolean } };
 function Status({ okay, label }: { okay: boolean; label: string }) {
   return <span className={`config-status ${okay ? "config-status--okay" : "config-status--missing"}`}>
     {okay ? <Check size={15} aria-hidden="true" /> : <X size={15} aria-hidden="true" />}
@@ -68,6 +68,7 @@ export function Settings() {
             <div><dt>OpenSea API</dt><dd><Status okay={health?.state === "Operational"} label={health?.state ?? "Checking…"} /></dd></div>
             <div><dt>Supabase</dt><dd><Status okay={config?.supabase.operational === true} label={config?.supabase.operational ? "Connected" : config?.supabase.configured ? "Connection failed" : "Not configured"} /></dd></div>
             <div><dt>Privy</dt><dd><Status okay={config?.privy.configured === true} label={config?.privy.configured ? "Configured" : "Not configured"} /></dd></div>
+            <div><dt>Wallet sign-in</dt><dd><Status okay={config?.walletAuth.configured === true} label={config?.walletAuth.configured ? "Configured" : "Not configured"} /></dd></div>
             <div><dt>RPC</dt><dd><Status okay={rpc === "Operational"} label={rpc === "Operational" ? config?.rpc.dedicated ? "Dedicated RPC online" : "Public RPC online" : rpc} /></dd></div>
             <div><dt>CoinGecko</dt><dd><Status okay={coin === "coingecko"} label={coin === "coingecko" ? "Operational" : "Fallback / unavailable"} /></dd></div>
             <div><dt>Wallet</dt><dd><Status okay={Boolean(w.address)} label={w.address ? "Connected" : "Disconnected"} /></dd></div>
@@ -167,7 +168,7 @@ export function Settings() {
             </div>
             <div>
               <dt>Watchlist / preferences</dt>
-              <dd>{w.userId && config?.supabase.operational ? "Supabase · browser cache" : "This browser"}</dd>
+              <dd>{w.userId && config?.supabase.operational ? "Supabase · signed wallet" : "This browser"}</dd>
             </div>
             <div>
               <dt>Signing</dt>

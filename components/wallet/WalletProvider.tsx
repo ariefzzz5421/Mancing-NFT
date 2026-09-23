@@ -17,6 +17,7 @@ import {
 } from "viem";
 import { mainnet } from "viem/chains";
 import { WETH } from "@/lib/web3/constants";
+import { signInWatchlist, signOutWatchlist } from "@/lib/web3/watchlist-auth";
 type Provider = EIP1193Provider & {
   on?: (event: string, fn: (value: unknown) => void) => void;
   removeListener?: (event: string, fn: (value: unknown) => void) => void;
@@ -40,6 +41,7 @@ export type Wallet = {
   refresh: () => Promise<void>;
   userId: string | null;
   getAccessToken: () => Promise<string | null>;
+  signIn: () => Promise<void>;
 };
 export const Context = createContext<Wallet | null>(null);
 const noAccessToken = async () => null;
@@ -51,7 +53,21 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       weth: string | null;
     }>({ eth: null, weth: null }),
     [error, setError] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [userId, setUserId] = useState<string | null>(null);
+  const signIn = useCallback(async () => {
+    const provider = injected();
+    if (!provider || !address) throw Error("Connect your wallet first.");
+    setBusy(true);
+    setError("");
+    try { setUserId(await signInWatchlist(address, provider)); }
+    catch (cause) {
+      setUserId(null);
+      const message = cause instanceof Error ? cause.message : "Wallet sign-in declined.";
+      setError(message);
+      throw Error(message);
+    } finally { setBusy(false); }
+  }, [address]);
   const refresh = useCallback(async () => {
     const provider = injected();
     if (!provider || !address) return;
@@ -93,6 +109,10 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       const [a] = await client.requestAddresses();
       setAddress(a ?? null);
       setChain(await client.getChainId());
+      if (a) {
+        try { setUserId(await signInWatchlist(a, provider)); }
+        catch (cause) { setError(cause instanceof Error ? cause.message : "Wallet sign-in declined. Connect again to sync watchlists."); }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Wallet connection declined");
     } finally {
@@ -102,6 +122,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const p = injected();
     const accounts = (value: unknown) => {
+      setUserId(null);
+      void signOutWatchlist();
       setAddress(
         Array.isArray(value) && typeof value[0] === "string"
           ? (value[0] as Address)
@@ -121,6 +143,21 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
   useEffect(() => {
+    const provider = injected();
+    if (!provider) return;
+    let active = true;
+    Promise.all([provider.request({ method: "eth_accounts" }), fetch("/api/auth/session", { cache: "no-store" }).then((r) => r.json())])
+      .then(([accounts, session]) => {
+        if (!active || !Array.isArray(accounts) || typeof accounts[0] !== "string") return;
+        const account = accounts[0] as Address;
+        if (session.address?.toLowerCase() === account.toLowerCase()) {
+          setAddress(account);
+          setUserId(`wallet:${account.toLowerCase()}`);
+        }
+      }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+  useEffect(() => {
     queueMicrotask(() => void refresh());
   }, [refresh, chain]);
   return (
@@ -133,12 +170,15 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         busy,
         connect,
         disconnect: () => {
+          void signOutWatchlist();
+          setUserId(null);
           setAddress(null);
           setBalance({ eth: null, weth: null });
         },
         refresh,
-        userId: null,
+        userId,
         getAccessToken: noAccessToken,
+        signIn,
       }}
     >
       {children}

@@ -8,6 +8,8 @@ import { TradePanel } from "./TradePanel";
 import { NetEdgeCalculator } from "./NetEdgeCalculator";
 import { SweepCalculator, LiquidityPanel } from "./SweepCalculator";
 import { PriceHistoryChart } from "./PriceHistoryChart";
+import { CollectionPriceTape } from "./CollectionPriceTape";
+import { Star } from "lucide-react";
 import { eth } from "@/lib/quant/book";
 import type { Book, Collection, Stats, Level, Side } from "@/types/market";
 import { useWatchlist } from "@/lib/watchlist";
@@ -92,7 +94,9 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
           </h1>
         </div>
         <button
-          className="t-button"
+          className={`watchlist-star terminal-star ${watchlist.byKey.has(`ethereum:${slug}`) ? "is-active" : ""}`}
+          aria-label={watchlist.byKey.has(`ethereum:${slug}`) ? "Remove collection from watchlist" : "Add collection to watchlist"}
+          title={watchlist.byKey.has(`ethereum:${slug}`) ? "Remove from watchlist" : "Add to watchlist"}
           onClick={() => {
             if (watchlist.byKey.has(`ethereum:${slug}`)) {
               watchlist.removeItem(slug, "ethereum");
@@ -106,13 +110,13 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
             });
           }}
         >
-          {watchlist.items.some((x) => x.slug === slug)
-            ? "× Remove from watchlist"
-            : "+ Watch collection"}
+          <Star size={18} fill={watchlist.byKey.has(`ethereum:${slug}`) ? "currentColor" : "none"} aria-hidden="true" />
+          <span>{watchlist.byKey.has(`ethereum:${slug}`) ? "Watchlisted" : "Watch collection"}</span>
         </button>
       </div>
       {watchlist.syncError && <p className="t-error" role="alert">{watchlist.syncError}</p>}
       <CollectionSearch />
+      <CollectionPriceTape collection={collection} stats={stats} book={book} slug={slug} />
       <SpreadPanel
         bid={book?.bids[0]?.priceWei}
         ask={book?.asks[0]?.priceWei}
