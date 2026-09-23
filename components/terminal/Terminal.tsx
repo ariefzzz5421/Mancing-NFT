@@ -68,6 +68,7 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
   );
   useEffect(() => {
     const controller = new AbortController();
+    queueMicrotask(() => { setCollection(null); setStats(null); setBook(null); setEntry(""); setExit(""); setSelected(""); });
     queueMicrotask(() => void load(controller.signal));
     const timer = setInterval(() => {
       if (!document.hidden) queueMicrotask(() => void load(controller.signal));
@@ -178,7 +179,7 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
             selectedOrder={selectedOrder}
             ethUsd={ethUsd.priceUsd}
           />
-          <NetEdgeCalculator entry={entry} exit={exit} quantity={quantity} ethUsd={ethUsd.priceUsd} />
+          <NetEdgeCalculator entry={entry} exit={exit} quantity={quantity} ethUsd={ethUsd.priceUsd} collection={collection} />
           </>}
         </aside>
       </div>

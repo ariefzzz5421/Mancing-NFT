@@ -15,7 +15,7 @@ const tokenStyles: Record<MarketSymbol, string> = {
 };
 
 const tokenLogoSrc: Record<MarketSymbol, string> = {
-  APE: "",
+  APE: "/token-logos/APE.png",
   BNB: "/token-logos/BNB.png",
   BTC: "/token-logos/BTC.png",
   ETH: "/token-logos/ETH.png",

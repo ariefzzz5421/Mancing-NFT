@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   isSupportedChain,
   SUPPORTED_CHAINS,
-  type SupportedChain,
 } from "@/lib/chains";
 import { parseCollectionInput } from "@/lib/collection-input";
-import { fetchCollection, fetchContract, OpenSeaApiError } from "@/lib/opensea";
+import { fetchCollection, fetchContract, searchCollections, OpenSeaApiError } from "@/lib/opensea";
+import { normalizeCollectionSearch } from "@/lib/discovery";
 import type { CollectionResolution } from "@/lib/types";
 
 type UnknownRecord = Record<string, unknown>;
@@ -55,13 +55,13 @@ function readCollectionSlug(payload: unknown) {
   ]);
 }
 
-function readCollectionChain(payload: unknown): SupportedChain | null {
+function readCollectionChain(payload: unknown): string | null {
   const candidates = [
     firstString(payload, [["chain"], ["blockchain"]]),
     firstString(payload, [["contracts", 0, "chain"], ["primary_asset_contracts", 0, "chain"]]),
   ];
 
-  return candidates.find(isSupportedChain) ?? null;
+  return candidates.find((value): value is string => Boolean(value)) ?? null;
 }
 
 function readContractAddress(payload: unknown) {
@@ -91,9 +91,11 @@ function jsonError(error: string, status: number) {
 
 async function resolveSlug(slug: string): Promise<CollectionResolution> {
   const payload = await fetchCollection(slug);
+  const actualChain = readCollectionChain(payload) ?? "ethereum";
 
   return {
-    chain: readCollectionChain(payload) ?? "ethereum",
+    chain: isSupportedChain(actualChain) ? actualChain : "ethereum",
+    actualChain,
     collectionName: readCollectionName(payload),
     contractAddress: readContractAddress(payload),
     detectedFrom: "slug",
@@ -103,7 +105,7 @@ async function resolveSlug(slug: string): Promise<CollectionResolution> {
 
 async function resolveContract(
   address: string,
-  chainHint: SupportedChain | null,
+  chainHint: string | null,
 ): Promise<CollectionResolution> {
   const chains = chainHint
     ? [chainHint, ...SUPPORTED_CHAINS.filter((chain) => chain !== chainHint)]
@@ -127,7 +129,8 @@ async function resolveContract(
     }
 
     return {
-      chain: result.value.chain,
+      chain: isSupportedChain(result.value.chain) ? result.value.chain : "ethereum",
+      actualChain: result.value.chain,
       collectionName: readCollectionName(result.value.payload),
       contractAddress: readContractAddress(result.value.payload) ?? address,
       detectedFrom: "contract",
@@ -135,8 +138,23 @@ async function resolveContract(
     };
   }
 
+  // For a bare contract, search OpenSea's wider chain index and verify the
+  // exact contract in collection metadata before trusting a search match.
+  if (!chainHint) {
+    const matches = normalizeCollectionSearch(await searchCollections(address, 8), 8);
+    const details = await Promise.allSettled(matches.map((item) => fetchCollection(item.slug)));
+    for (let index = 0; index < details.length; index++) {
+      const result = details[index];
+      if (result.status !== "fulfilled") continue;
+      const contracts = readPath(result.value, ["contracts"]);
+      if (!Array.isArray(contracts) || !contracts.some((contract) => firstString(contract, [["address"]])?.toLowerCase() === address)) continue;
+      const actualChain = readCollectionChain(result.value) ?? "ethereum";
+      return { chain: isSupportedChain(actualChain) ? actualChain : "ethereum", actualChain, collectionName: readCollectionName(result.value), contractAddress: address, detectedFrom: "contract", slug: matches[index].slug };
+    }
+  }
+
   throw new OpenSeaApiError(
-    "No supported OpenSea collection was found for this contract on Ethereum or ApeChain.",
+    "No matching OpenSea collection was found for this contract in the searched chains.",
     404,
   );
 }

@@ -26,13 +26,17 @@ function href(item: MarketCollection) {
 }
 
 export function MarketOverview() {
+  const [chain, setChain] = useState("");
+  const [sort, setSort] = useState("one_day_volume");
   const [data, setData] = useState<CollectionDiscoveryResponse | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
-      const response = await fetch("/api/discovery", { signal });
+      const params = new URLSearchParams({ sort });
+      if (chain) params.set("chain", chain);
+      const response = await fetch(`/api/discovery?${params}`, { signal });
       const result = await response.json() as CollectionDiscoveryResponse & { error?: string };
       if (!response.ok) throw Error(result.error ?? result.warnings?.join(" · ") ?? "Trending feed unavailable.");
       if (signal?.aborted) return;
@@ -41,7 +45,7 @@ export function MarketOverview() {
     } catch (cause) {
       if (!signal?.aborted) setError(cause instanceof Error ? cause.message : "Trending feed unavailable.");
     } finally { if (!signal?.aborted) setLoading(false); }
-  }, []);
+  }, [chain, sort]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -61,6 +65,12 @@ export function MarketOverview() {
     </div>
     <p className="overview-intro">Discover active collections, inspect their order books, and save the ones you want to follow.</p>
     <CollectionSearch />
+    <div className="overview-filters" aria-label="Collection discovery filters">
+      <div className="overview-chain-filters">
+        {["", "ethereum", "solana", "base", "ape_chain", "polygon", "arbitrum", "robinhood", "arc"].map((value) => <button key={value || "all"} type="button" className={chain === value ? "active" : ""} aria-pressed={chain === value} title={value || "All chains"} onClick={() => { setChain(value); if (!value && sort === "floor_cap_estimate") setSort("one_day_volume"); }}>{value ? <ChainLogo chain={value} /> : "All"}<span>{value ? value.replaceAll("_", " ") : "All"}</span></button>)}
+      </div>
+      <label>TOP BY <select value={sort} onChange={(event) => setSort(event.target.value)}><option value="one_day_volume">24h volume</option><option value="one_day_sales">24h sales</option><option value="floor_price">Floor price</option><option value="total_volume">All-time volume</option><option value="floor_cap_estimate" disabled={!chain}>Est. floor cap (choose chain)</option></select></label>
+    </div>
     {error && <div className="t-error" role="alert">OpenSea market overview unavailable: {error} <button type="button" onClick={() => void load()}>Retry</button></div>}
     {loading && !data && <div className="overview-loading" role="status">Loading trending collections from OpenSea…</div>}
     {data && <>
@@ -81,12 +91,12 @@ export function MarketOverview() {
           </div>) : <div className="book-empty">No trending collections were returned.</div>}
         </section>
         <aside className="t-panel overview-top" aria-labelledby="overview-top-title">
-          <div className="panel-title"><span id="overview-top-title">02 / 24H VOLUME RANK</span></div>
+          <div className="panel-title"><span id="overview-top-title">02 / TOP COLLECTIONS</span><span>{sort.replaceAll("_", " ").toUpperCase()}</span></div>
           {top.map((item) => <Link className="overview-top-row" key={item.slug} href={href(item)} target={item.analyzable ? undefined : "_blank"} rel={item.analyzable ? undefined : "noreferrer"}>
-            <span>{String(item.rank).padStart(2, "0")}</span><CollectionArt item={item} /><ChainLogo chain={item.chain} /><strong>{item.name}</strong><ArrowUpRight size={14} aria-hidden="true" />
+            <span>{String(item.rank).padStart(2, "0")}</span><CollectionArt item={item} /><ChainLogo chain={item.chain} /><strong>{item.name}</strong><span className="overview-top-value">{sort === "floor_cap_estimate" ? metric(item.floor !== null && item.supply ? item.floor * item.supply : null, 2) : sort === "one_day_sales" ? metric(item.sales24h, 0) : sort === "floor_price" ? metric(item.floor, 4) : sort === "total_volume" ? metric(item.totalVolume) : metric(item.volume24h)}<small>{sort === "one_day_sales" ? "sales" : item.nativeSymbol}</small></span><ArrowUpRight size={14} aria-hidden="true" />
           </Link>)}
           {!top.length && <div className="book-empty">Volume ranking unavailable.</div>}
-          <p className="t-note">Trending is OpenSea’s activity ranking. A high rank does not imply a tradeable spread. Open a collection to inspect bids, asks and depth.</p>
+          <p className="t-note">OpenSea ranks this list by the selected metric. Market cap is not supplied by this feed; floor × supply would only be an estimate. Ranking does not imply a tradeable spread.</p>
         </aside>
       </div>
       <p className="t-note">Floor and 24h volume appear only when collection statistics are available. Values are OpenSea snapshots, not executable prices.</p>

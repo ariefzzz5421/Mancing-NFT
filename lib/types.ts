@@ -156,6 +156,7 @@ export type MarketCollection = {
   owners: number | null;
   rank: number;
   sales24h: number | null;
+  supply: number | null;
   slug: string;
   totalVolume: number | null;
   verified: boolean;
@@ -242,6 +243,7 @@ export type ActivityApiResponse = {
 
 export type CollectionResolution = {
   chain: SupportedChain;
+  actualChain?: string;
   collectionName: string | null;
   contractAddress: string | null;
   detectedFrom: "contract" | "slug";

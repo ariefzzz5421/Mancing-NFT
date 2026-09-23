@@ -1,19 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
-import type { Health } from "@/types/market";
 import type { MarketPricesResponse } from "@/lib/types";
 import { TokenLogo } from "@/components/TokenLogo";
 export function MarketStatus() {
-  const [health, setHealth] = useState<Health | null>(null),
-    [prices, setPrices] = useState<MarketPricesResponse | null>(null),
-    [gas, setGas] = useState<string | null>(null);
+  const [prices, setPrices] = useState<MarketPricesResponse | null>(null),
+    [gas, setGas] = useState<string | null>(null),
+    [gasUpdatedAt, setGasUpdatedAt] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
     async function load() {
       if (document.hidden) return;
-      void fetch("/api/health").then((r) => r.json()).then((value: Health) => { if (active) setHealth(value); }).catch(() => {});
       void fetch("/api/market/prices").then((r) => r.json()).then((value: MarketPricesResponse) => { if (active) setPrices(value); }).catch(() => {});
-      void fetch("/api/network").then((r) => r.json()).then((value: { gasGwei: string | null }) => { if (active) setGas(value.gasGwei); }).catch(() => {});
+      void fetch("/api/network").then((r) => r.json()).then((value: { gasGwei: string | null; updatedAt?: string }) => { if (active) { setGas(value.gasGwei); setGasUpdatedAt(value.updatedAt ?? null); } }).catch(() => {});
     }
     void load();
     const id = setInterval(load, 60000);
@@ -23,6 +21,7 @@ export function MarketStatus() {
     };
   }, []);
   const eth = prices?.assets.find((asset) => asset.symbol === "ETH")?.priceUsd ?? null;
+  const nftTxGasUsd = gas && eth ? Number(gas) * 180_000 / 1_000_000_000 * eth : null;
   return (<>
     <div className="major-prices" aria-label="Major crypto prices in USD">
       {(["BTC", "ETH", "HYPE", "SOL", "BNB", "APE"] as const).map((symbol) => {
@@ -44,23 +43,17 @@ export function MarketStatus() {
         </b>
       </span>
       <span>
-        GAS <b>{gas ? `${gas} gwei` : "Unavailable"}</b>
+        GAS <b>{gas ? `${Number(gas).toLocaleString("en-US", { maximumFractionDigits: 3 })} gwei` : "Unavailable"}</b>
       </span>
-      <span
-        className={
-          health?.state === "Operational" ? "positive" : "status-warning"
-        }
-      >
-        ● OpenSea {health?.state ?? "Checking…"}
-      </span>
+      <span>EST. NFT TX <b>{nftTxGasUsd === null ? "Unavailable" : `≈ $${nftTxGasUsd.toFixed(2)}`}</b> <small>(180k gas units)</small></span>
       <span>
         NETWORK <b>Ethereum</b>
       </span>
       <span className="status-time">
         LAST CHECK{" "}
         <b>
-          {health?.updatedAt
-            ? new Date(health.updatedAt).toLocaleTimeString()
+          {gasUpdatedAt
+            ? new Date(gasUpdatedAt).toLocaleTimeString()
             : "—"}
         </b>
       </span>

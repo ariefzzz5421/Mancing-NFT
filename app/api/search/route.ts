@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { normalizeCollectionSearch } from "@/lib/discovery";
+import { normalizeCollectionSearch, normalizeCollectionLeaderboard } from "@/lib/discovery";
 import { OpenSeaApiError, searchCollections } from "@/lib/opensea";
 import type { CollectionSearchResponse } from "@/lib/types";
 
@@ -18,20 +18,35 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const [ethereum, apeChain] = await Promise.allSettled([
-      searchCollections(query, 8, "ethereum"),
-      searchCollections(query, 4, "ape_chain"),
-    ]);
-    if (ethereum.status === "rejected" && apeChain.status === "rejected") throw ethereum.reason;
-    const ethResults = ethereum.status === "fulfilled" ? normalizeCollectionSearch(ethereum.value, 8).map((item) => ({ ...item, chain: "ethereum", analyzable: true, nativeSymbol: "ETH" })) : [];
-    const apeResults = apeChain.status === "fulfilled" ? normalizeCollectionSearch(apeChain.value, 4).map((item) => ({ ...item, chain: "ape_chain", analyzable: true, nativeSymbol: "APE" })) : [];
+    const matches = normalizeCollectionSearch(await searchCollections(query, 12), 12);
+    const key = process.env.OPENSEA_API_KEY;
+    let details = new Map<string, ReturnType<typeof normalizeCollectionLeaderboard>[number]>();
+    if (key && matches.length) {
+      details = new Map();
+      for (let index = 0; index < matches.length; index += 4) {
+        const group = matches.slice(index, index + 4);
+        const response = await fetch("https://api.opensea.io/api/v2/collections/batch", {
+          method: "POST",
+          headers: { "x-api-key": key, "content-type": "application/json" },
+          body: JSON.stringify({ slugs: group.map((item) => item.slug) }),
+          signal: AbortSignal.timeout(8000),
+        }).catch(() => null);
+        if (!response?.ok) continue;
+        const rows = normalizeCollectionLeaderboard(await response.json(), 4);
+        rows.forEach((item) => details.set(item.slug, item));
+      }
+    }
+    const results = matches.map((item) => {
+      const detail = details.get(item.slug);
+      return detail ? { ...item, chain: detail.chain, analyzable: detail.analyzable, nativeSymbol: detail.nativeSymbol, supply: detail.supply, verified: detail.verified || item.verified } : item;
+    });
     const payload: CollectionSearchResponse = {
-      results: [...ethResults.slice(0, 6), ...apeResults.slice(0, 2), ...ethResults.slice(6)].filter((item, index, all) => all.findIndex((other) => other.slug === item.slug) === index).slice(0, 8),
+      results: results.filter((item, index, all) => all.findIndex((other) => other.slug === item.slug && other.chain === item.chain) === index),
       source: "opensea",
     };
 
     return NextResponse.json(payload, {
-      headers: { "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300" },
+      headers: { "Cache-Control": results.some((item) => item.chain === "unknown") ? "public, s-maxage=15" : "public, s-maxage=120, stale-while-revalidate=300" },
     });
   } catch (cause) {
     if (cause instanceof OpenSeaApiError) {

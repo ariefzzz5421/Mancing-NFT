@@ -1,10 +1,9 @@
-import { isSupportedChain, type SupportedChain } from "@/lib/chains";
 import { extractSlug } from "@/lib/slug";
 
 export type ParsedCollectionInput =
   | {
       address: string;
-      chainHint: SupportedChain | null;
+      chainHint: string | null;
       kind: "contract";
     }
   | {
@@ -48,7 +47,7 @@ function parseOpenSeaPath(input: string): ParsedCollectionInput | null {
     if (isEvmAddress(address)) {
       return {
         address: address.toLowerCase(),
-        chainHint: isSupportedChain(chainValue) ? chainValue : null,
+        chainHint: /^[a-z][a-z_0-9]{1,31}$/.test(chainValue) ? chainValue : null,
         kind: "contract",
       };
     }

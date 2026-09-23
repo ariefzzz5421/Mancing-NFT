@@ -14,6 +14,8 @@ const logos: Record<string, string> = {
   bnb: "/token-logos/BNB.png",
   hyperliquid: "/token-logos/HYPE.png",
   hyperevm: "/token-logos/HYPE.png",
+  robinhood: "/chain-logos/robinhood.png",
+  arc: "/chain-logos/arc.jpg",
 };
 export function ChainLogo({ chain, className = "" }: ChainLogoProps) {
   const name = chain === "robinhood" ? "Robinhood Chain" : chain.replaceAll("_", " ");

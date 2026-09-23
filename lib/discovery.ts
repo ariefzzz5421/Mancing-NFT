@@ -162,6 +162,7 @@ function normalizeCollection(row: unknown, rank: number): MarketCollection | nul
       ["sales_24h"],
       ["sales"],
     ]),
+    supply: firstNumber(row, [["collection", "total_supply"], ["collection", "supply"], ["stats", "total_supply"], ["total_supply"], ["supply"]]),
     slug,
     totalVolume: firstNumber(row, [
       ["stats", "total_volume"],

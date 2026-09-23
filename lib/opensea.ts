@@ -66,38 +66,40 @@ export function fetchCollectionStats(slug: string) {
   );
 }
 
-export function fetchTopCollections(limit = 20) {
+export function fetchTopCollections(limit = 20, sortBy = "one_day_volume", chain?: string) {
   const params = new URLSearchParams({
     limit: String(limit),
-    sort_by: "one_day_volume",
+    sort_by: sortBy,
   });
+  if (chain) params.set("chains", chain);
   return fetchOpenSea<unknown>(`/collections/top?${params.toString()}`);
 }
 
-export function fetchCollectionsBySales(limit = 20) {
+export function fetchCollectionsBySales(limit = 20, chain?: string) {
   const params = new URLSearchParams({
     limit: String(limit),
     sort_by: "one_day_sales",
   });
+  if (chain) params.set("chains", chain);
   return fetchOpenSea<unknown>(`/collections/top?${params.toString()}`);
 }
 
-export function fetchTrendingCollections(limit = 20) {
+export function fetchTrendingCollections(limit = 20, chain?: string) {
   const params = new URLSearchParams({
     limit: String(limit),
     timeframe: "one_day",
   });
+  if (chain) params.set("chains", chain);
   return fetchOpenSea<unknown>(`/collections/trending?${params.toString()}`);
 }
 
-export function searchCollections(query: string, limit = 8, chain?: "ethereum" | "ape_chain") {
+export function searchCollections(query: string, limit = 8, chain?: string) {
   const params = new URLSearchParams({
     asset_types: "collection",
     limit: String(Math.min(Math.max(limit, 1), 20)),
     query,
   });
   if (chain) params.append("chains", chain);
-  else { params.append("chains", "ethereum"); params.append("chains", "ape_chain"); }
 
   return fetchOpenSea<unknown>(`/search?${params.toString()}`);
 }

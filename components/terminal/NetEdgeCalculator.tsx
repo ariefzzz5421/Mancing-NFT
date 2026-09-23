@@ -1,21 +1,32 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { edge, eth, wei, spread } from "@/lib/quant/book";
+import type { Collection } from "@/types/market";
 export function NetEdgeCalculator({
   entry,
   exit,
   quantity,
   ethUsd,
+  collection,
 }: {
   entry: string;
   exit: string;
   quantity: number;
   ethUsd: number | null;
+  collection: Collection | null;
 }) {
   const [fee, setFee] = useState("1");
   const [royalty, setRoyalty] = useState("0");
   const [gas, setGas] = useState("0.0005");
   const [slippage, setSlippage] = useState("0.5");
+  const lastCollectionSlug = useRef("");
+  useEffect(() => {
+    if (!collection || lastCollectionSlug.current === collection.slug) return;
+    lastCollectionSlug.current = collection.slug;
+    const required = collection.fees.filter((item) => item.required).reduce((sum, item) => sum + item.bps, 0);
+    const optional = collection.fees.filter((item) => !item.required).reduce((sum, item) => sum + item.bps, 0);
+    queueMicrotask(() => { setFee(String(required / 100)); setRoyalty(String(optional / 100)); });
+  }, [collection]);
   useEffect(() => {
     try {
       const p = JSON.parse(localStorage.getItem("mancing-preferences") ?? "{}");

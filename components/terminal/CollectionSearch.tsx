@@ -20,14 +20,21 @@ export function CollectionSearch() {
     document.addEventListener("pointerdown", dismiss);
     return () => document.removeEventListener("pointerdown", dismiss);
   }, [results.length]);
-  async function openResult(slug: string) {
-    setOpening(slug);
+  function navigate(slug: string, chain: string) {
+    if (chain === "ethereum") router.push(`/terminal/${encodeURIComponent(slug)}`);
+    else if (chain === "ape_chain") router.push(`/collection/${encodeURIComponent(slug)}?chain=ape_chain`);
+    else window.location.assign(`https://opensea.io/collection/${encodeURIComponent(slug)}`);
+  }
+  async function openResult(item: MarketCollection) {
+    setOpening(item.slug);
     setError("");
     try {
-      const response = await fetch(`/api/resolve-collection?input=${encodeURIComponent(slug)}`);
-      const data = await response.json();
-      if (!response.ok) throw Error(data.error ?? "Collection unavailable.");
-      router.push(data.chain === "ethereum" ? `/terminal/${encodeURIComponent(data.slug)}` : `/collection/${encodeURIComponent(data.slug)}?chain=${encodeURIComponent(data.chain)}`);
+      if (item.chain === "unknown") {
+        const response = await fetch(`/api/resolve-collection?input=${encodeURIComponent(item.slug)}`);
+        const data = await response.json();
+        if (!response.ok) throw Error(data.error ?? "Collection network unavailable.");
+        navigate(item.slug, data.actualChain ?? data.chain);
+      } else navigate(item.slug, item.chain);
       setResults([]);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not open collection."); }
     finally { setOpening(null); }
@@ -45,7 +52,7 @@ export function CollectionSearch() {
         );
         const d = await r.json();
         if (!r.ok) throw Error(d.error);
-        router.push(d.chain === "ethereum" ? `/terminal/${encodeURIComponent(d.slug)}` : `/collection/${encodeURIComponent(d.slug)}?chain=${encodeURIComponent(d.chain)}`);
+        navigate(d.slug, d.actualChain ?? d.chain);
       } else {
         const r = await fetch(
           `/api/collections/search?q=${encodeURIComponent(query)}`,
@@ -91,7 +98,7 @@ export function CollectionSearch() {
               key={r.slug}
               type="button"
               disabled={opening !== null}
-              onClick={() => void openResult(r.slug)}
+              onClick={() => void openResult(r)}
             >
               <span className="search-results__identity">
                 {r.imageUrl ? (
