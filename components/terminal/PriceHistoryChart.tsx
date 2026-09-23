@@ -37,7 +37,10 @@ export function PriceHistoryChart({ slug, floor }: { slug: string; floor: number
       } finally { if (!controller.signal.aborted) setLoading(false); }
     }
     void load();
-    return () => controller.abort();
+    const refreshTimer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void load();
+    }, 60_000);
+    return () => { controller.abort(); window.clearInterval(refreshTimer); };
   }, [slug, revision]);
   const points = history?.points ?? [];
   const last = points.at(-1);
