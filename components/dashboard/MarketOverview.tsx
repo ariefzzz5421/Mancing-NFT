@@ -7,6 +7,7 @@ import { CollectionSearch } from "@/components/terminal/CollectionSearch";
 import { WatchlistStar } from "@/components/watchlist/WatchlistPicker";
 import { ChainLogo } from "@/components/ChainLogo";
 import { OpenSeaDetailsLink } from "@/components/OpenSeaDetailsLink";
+import { getTerminalHref } from "@/lib/collection-navigation";
 import type { CollectionDiscoveryResponse, MarketCollection } from "@/lib/types";
 
 function metric(value: number | null, decimals = 2) {
@@ -32,9 +33,7 @@ function CollectionArt({ item }: { item: MarketCollection }) {
 }
 
 function href(item: MarketCollection) {
-  return item.chain === "ethereum" ? `/terminal/${encodeURIComponent(item.slug)}` :
-    item.chain === "ape_chain" ? `/collection/${encodeURIComponent(item.slug)}?chain=ape_chain` :
-      `https://opensea.io/collection/${encodeURIComponent(item.slug)}`;
+  return getTerminalHref(item.slug, item.chain);
 }
 
 export function MarketOverview() {
@@ -135,7 +134,7 @@ export function MarketOverview() {
           <div className="panel-title"><span id="overview-trending-title">01 / TRENDING COLLECTIONS</span><span>OPENSEA RANK</span></div>
           {trending.length ? trending.map((item) => <div className="overview-trend-row" key={item.slug}>
             <span className="overview-rank">{String(item.rank).padStart(2, "0")}</span>
-            <Link className="overview-collection" href={href(item)} target={item.analyzable ? undefined : "_blank"} rel={item.analyzable ? undefined : "noreferrer"}>
+            <Link className="overview-collection" href={href(item)}>
               <CollectionArt item={item} /><span><strong>{item.name}{item.verified && <BadgeCheck size={14} aria-label="Verified" />}</strong><small><ChainLogo chain={item.chain} />{item.chain === "robinhood" ? "Robinhood Chain" : item.chain.replaceAll("_", " ")}</small><small className="overview-mobile-metrics">Floor {metric(item.floor, 4)} {item.floorSymbol ?? item.nativeSymbol} · 24h {metric(item.volume24h, 2)} {item.volumeSymbol ?? item.nativeSymbol}</small></span><ArrowUpRight size={15} aria-hidden="true" />
             </Link>
             <span className="overview-trend-metric"><small>FLOOR</small>{metric(item.floor, 4)} <em>{item.floorSymbol ?? item.nativeSymbol}</em></span>
@@ -148,7 +147,7 @@ export function MarketOverview() {
         <aside className="t-panel overview-top" aria-labelledby="overview-top-title">
           <div className="panel-title"><span id="overview-top-title">02 / TOP COLLECTIONS</span><span>{sort.replaceAll("_", " ").toUpperCase()}</span></div>
           {top.map((item) => <div className="overview-top-row" key={item.slug}>
-            <Link className="overview-top-main" href={href(item)} target={item.analyzable ? undefined : "_blank"} rel={item.analyzable ? undefined : "noreferrer"}>
+            <Link className="overview-top-main" href={href(item)}>
               <span>{String(item.rank).padStart(2, "0")}</span><CollectionArt item={item} /><ChainLogo chain={item.chain} /><strong>{item.name}</strong><span className="overview-top-value">{sort === "floor_cap_estimate" ? metric(item.floor !== null && item.supply ? item.floor * item.supply : null, 2) : sort === "one_day_sales" ? metric(item.sales24h, 0) : sort === "floor_price" ? metric(item.floor, 4) : sort === "total_volume" ? metric(item.totalVolume) : metric(item.volume24h)}<small>{sort === "one_day_sales" ? "sales" : sort === "floor_price" || sort === "floor_cap_estimate" ? item.floorSymbol ?? item.nativeSymbol : sort === "one_day_volume" ? item.volumeSymbol ?? item.nativeSymbol : item.nativeSymbol}</small></span><ArrowUpRight size={14} aria-hidden="true" />
             </Link><OpenSeaDetailsLink slug={item.slug} name={item.name} />
           </div>)}

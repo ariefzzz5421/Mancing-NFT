@@ -5,6 +5,7 @@ import { Search, ArrowUpRight, BadgeCheck } from "lucide-react";
 import type { MarketCollection } from "@/lib/types";
 import { ChainLogo } from "@/components/ChainLogo";
 import { OpenSeaDetailsLink } from "@/components/OpenSeaDetailsLink";
+import { getTerminalHref } from "@/lib/collection-navigation";
 export function CollectionSearch() {
   const router = useRouter();
   const container = useRef<HTMLDivElement>(null);
@@ -22,9 +23,7 @@ export function CollectionSearch() {
     return () => document.removeEventListener("pointerdown", dismiss);
   }, [results.length]);
   function navigate(slug: string, chain: string) {
-    if (chain === "ethereum") router.push(`/terminal/${encodeURIComponent(slug)}`);
-    else if (chain === "ape_chain") router.push(`/collection/${encodeURIComponent(slug)}?chain=ape_chain`);
-    else window.location.assign(`https://opensea.io/collection/${encodeURIComponent(slug)}`);
+    router.push(getTerminalHref(slug, chain));
   }
   async function openResult(item: MarketCollection) {
     setOpening(item.slug);
@@ -122,7 +121,7 @@ export function CollectionSearch() {
           ["milady", "Milady"],
           ["azuki", "Azuki"],
         ].map(([s, n]) => (
-          <button key={s} onClick={() => router.push(`/terminal/${s}`)}>
+          <button key={s} onClick={() => router.push(getTerminalHref(s, "ethereum"))}>
             {n}
             <ArrowUpRight size={12} />
           </button>
