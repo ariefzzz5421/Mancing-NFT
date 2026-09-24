@@ -22,16 +22,23 @@ export function MarketStatus() {
   }, []);
   const eth = prices?.assets.find((asset) => asset.symbol === "ETH")?.priceUsd ?? null;
   const nftTxGasUsd = gas && eth ? Number(gas) * 180_000 / 1_000_000_000 * eth : null;
+  const symbols = ["BTC", "ETH", "HYPE", "SOL", "BNB", "APE", "ZEC", "SP500"] as const;
+  const quotes = (copy: number) => symbols.map((symbol) => {
+    const asset = prices?.assets.find((item) => item.symbol === symbol);
+    const isIndex = symbol === "SP500";
+    return <div className="major-price" key={`${symbol}-${copy}`} title={asset?.lastUpdated ? `Source: ${asset.source} · updated ${new Date(asset.lastUpdated).toLocaleTimeString()}` : "Price unavailable"}>
+      <TokenLogo symbol={symbol} className="major-price__logo" />
+      <span>{isIndex ? "S&P 500" : symbol}</span>
+      <strong>{asset?.priceUsd ? `${isIndex ? "" : "$"}${asset.priceUsd.toLocaleString("en-US", { maximumFractionDigits: asset.priceUsd < 1 ? 4 : 2 })}${isIndex ? " pts" : ""}` : "—"}</strong>
+      {asset?.change24h != null && <small className={asset.change24h >= 0 ? "positive" : "negative"}>{asset.change24h >= 0 ? "+" : ""}{asset.change24h.toFixed(2)}%</small>}
+    </div>;
+  });
   return (<>
-    <div className="major-prices" aria-label="Major crypto prices in USD">
-      {(["BTC", "ETH", "HYPE", "SOL", "BNB", "APE"] as const).map((symbol) => {
-        const asset = prices?.assets.find((item) => item.symbol === symbol);
-        return <div className="major-price" key={symbol} title={asset?.lastUpdated ? `Source: ${asset.source} · updated ${new Date(asset.lastUpdated).toLocaleTimeString()}` : "Price unavailable"}>
-          <TokenLogo symbol={symbol} className="major-price__logo" />
-          <span>{symbol}</span><strong>{asset?.priceUsd ? `$${asset.priceUsd.toLocaleString("en-US", { maximumFractionDigits: asset.priceUsd < 1 ? 4 : 2 })}` : "—"}</strong>
-          {asset?.change24h != null && <small className={asset.change24h >= 0 ? "positive" : "negative"}>{asset.change24h >= 0 ? "+" : ""}{asset.change24h.toFixed(2)}%</small>}
-        </div>;
-      })}
+    <div className="major-prices" aria-label="Market prices: crypto in USD and S&P 500 in index points">
+      <div className="major-prices__track">
+        <div className="major-prices__group">{quotes(0)}</div>
+        <div className="major-prices__group" aria-hidden="true">{quotes(1)}</div>
+      </div>
     </div>
     <div className="market-status">
       <span>

@@ -30,7 +30,6 @@ export const metadata: Metadata = {
     description: "NFT Quant Trading Terminal",
     siteName: "Mancing NFT",
     type: "website",
-    images: [{ url: "/brand/mancing-nft.png", width: 1254, height: 1254, alt: "Mancing NFT" }],
   },
   description:
     "NFT Quant Trading Terminal. Explore collection liquidity, bid/ask depth, spread and estimated net edge.",

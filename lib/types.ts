@@ -126,7 +126,7 @@ export type WalletApiResponse = {
   recentTransactions: WalletTransaction[];
 };
 
-export type MarketSymbol = "BTC" | "ETH" | "APE" | "HYPE" | "BNB" | "SOL";
+export type MarketSymbol = "BTC" | "ETH" | "APE" | "HYPE" | "BNB" | "SOL" | "ZEC" | "SP500";
 
 export type MarketPriceSource = "coingecko" | "yahoo" | "fallback";
 

@@ -8,13 +8,19 @@ import type {
 const COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3/simple/price";
 const YAHOO_BASE_URL = "https://query1.finance.yahoo.com/v8/finance/chart";
 
-const MARKET_ASSETS = [
+const CRYPTO_ASSETS = [
   { coingeckoId: "bitcoin", name: "Bitcoin", symbol: "BTC", yahooTicker: "BTC-USD" },
   { coingeckoId: "ethereum", name: "Ethereum", symbol: "ETH", yahooTicker: "ETH-USD" },
   { coingeckoId: "hyperliquid", name: "Hyperliquid", symbol: "HYPE", yahooTicker: null },
   { coingeckoId: "solana", name: "Solana", symbol: "SOL", yahooTicker: "SOL-USD" },
   { coingeckoId: "binancecoin", name: "BNB", symbol: "BNB", yahooTicker: "BNB-USD" },
   { coingeckoId: "apecoin", name: "ApeCoin", symbol: "APE", yahooTicker: null },
+  { coingeckoId: "zcash", name: "Zcash", symbol: "ZEC", yahooTicker: "ZEC-USD" },
+] as const;
+
+const MARKET_ASSETS = [
+  ...CRYPTO_ASSETS,
+  { coingeckoId: null, name: "S&P 500", symbol: "SP500", yahooTicker: "^GSPC" },
 ] as const;
 
 function readNumber(value: unknown) {
@@ -53,7 +59,7 @@ function buildResponse(assets: MarketAssetPrice[]): MarketPricesResponse {
 }
 
 async function fetchCoinGeckoPrices(): Promise<MarketPricesResponse> {
-  const ids = MARKET_ASSETS.map((asset) => asset.coingeckoId).join(",");
+  const ids = CRYPTO_ASSETS.map((asset) => asset.coingeckoId).join(",");
   const params = new URLSearchParams({
     ids,
     include_24hr_change: "true",
@@ -71,7 +77,7 @@ async function fetchCoinGeckoPrices(): Promise<MarketPricesResponse> {
 
   const payload = (await response.json()) as Record<string, Record<string, unknown>>;
   const now = new Date().toISOString();
-  const assets = MARKET_ASSETS.map((asset) => {
+  const assets = CRYPTO_ASSETS.map((asset) => {
     const data = payload[asset.coingeckoId];
     const updatedAt = readNumber(data?.last_updated_at);
     const priceUsd = readNumber(data?.usd) ?? 0;
@@ -104,7 +110,7 @@ async function fetchYahooSymbol(symbol: MarketSymbol): Promise<MarketAssetPrice>
   const response = await fetch(
     `${YAHOO_BASE_URL}/${asset.yahooTicker}?interval=1m&range=1d`,
     {
-      headers: { Accept: "application/json" },
+      headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0 MancingNFT/1.0" },
       next: { revalidate: 60 },
     },
   );
@@ -119,6 +125,7 @@ async function fetchYahooSymbol(symbol: MarketSymbol): Promise<MarketAssetPrice>
         meta?: {
           regularMarketPrice?: number;
           chartPreviousClose?: number;
+          previousClose?: number;
           regularMarketTime?: number;
         };
       }>;
@@ -131,7 +138,7 @@ async function fetchYahooSymbol(symbol: MarketSymbol): Promise<MarketAssetPrice>
     throw new Error(`Yahoo Finance returned incomplete ${symbol} price data.`);
   }
 
-  const previousClose = readNumber(meta?.chartPreviousClose);
+  const previousClose = readNumber(meta?.previousClose) ?? readNumber(meta?.chartPreviousClose);
   const change24h =
     previousClose && previousClose > 0 ? ((price - previousClose) / previousClose) * 100 : null;
   const marketTime = readNumber(meta?.regularMarketTime);
@@ -148,10 +155,10 @@ async function fetchYahooSymbol(symbol: MarketSymbol): Promise<MarketAssetPrice>
 
 async function fetchYahooPrices(): Promise<MarketPricesResponse> {
   const results = await Promise.allSettled(
-    MARKET_ASSETS.map((asset) => fetchYahooSymbol(asset.symbol)),
+    CRYPTO_ASSETS.map((asset) => fetchYahooSymbol(asset.symbol)),
   );
   const assets = results.map((result, index) => {
-    const symbol = MARKET_ASSETS[index].symbol;
+    const symbol = CRYPTO_ASSETS[index].symbol;
     return result.status === "fulfilled" ? result.value : fallbackAsset(symbol);
   });
 
@@ -163,13 +170,15 @@ async function fetchYahooPrices(): Promise<MarketPricesResponse> {
 }
 
 export async function fetchMarketPrices(): Promise<MarketPricesResponse> {
-  try {
-    return await fetchCoinGeckoPrices();
-  } catch {
-    try {
-      return await fetchYahooPrices();
-    } catch {
-      return buildResponse(MARKET_ASSETS.map((asset) => fallbackAsset(asset.symbol)));
-    }
+  const [crypto, index] = await Promise.allSettled([
+    fetchCoinGeckoPrices(),
+    fetchYahooSymbol("SP500"),
+  ]);
+  let cryptoAssets: MarketAssetPrice[];
+  if (crypto.status === "fulfilled") cryptoAssets = crypto.value.assets;
+  else {
+    try { cryptoAssets = (await fetchYahooPrices()).assets; }
+    catch { cryptoAssets = CRYPTO_ASSETS.map((asset) => fallbackAsset(asset.symbol)); }
   }
+  return buildResponse([...cryptoAssets, index.status === "fulfilled" ? index.value : fallbackAsset("SP500")]);
 }

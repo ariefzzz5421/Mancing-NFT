@@ -6,7 +6,7 @@ import { TokenLogo } from "@/components/TokenLogo";
 import { formatNumber } from "@/lib/format";
 import type { MarketAssetPrice, MarketPricesResponse } from "@/lib/types";
 
-function AnimatedNumber({ value }: { value: number }) {
+function AnimatedNumber({ value, isIndex = false }: { value: number; isIndex?: boolean }) {
   const [displayValue, setDisplayValue] = useState(value);
   const displayRef = useRef(value);
 
@@ -33,7 +33,7 @@ function AnimatedNumber({ value }: { value: number }) {
     return () => cancelAnimationFrame(frame);
   }, [value]);
 
-  return <span>${formatNumber(displayValue, 2)}</span>;
+  return <span>{isIndex ? "" : "$"}{formatNumber(displayValue, 2)}{isIndex ? " pts" : ""}</span>;
 }
 
 function PricePill({ asset }: { asset: MarketAssetPrice }) {
@@ -43,9 +43,9 @@ function PricePill({ asset }: { asset: MarketAssetPrice }) {
   return (
     <div className="market-quote">
       <TokenLogo className="h-5 w-5" symbol={asset.symbol} />
-      <span className="font-semibold text-slate-100">{asset.symbol}</span>
+      <span className="font-semibold text-slate-100">{asset.symbol === "SP500" ? "S&P 500" : asset.symbol}</span>
       <span className="font-mono text-cyan-100 tabular-nums">
-        {hasPrice ? <AnimatedNumber value={asset.priceUsd} /> : "Unavailable"}
+        {hasPrice ? <AnimatedNumber value={asset.priceUsd} isIndex={asset.symbol === "SP500"} /> : "Unavailable"}
       </span>
       {hasPrice && asset.change24h !== null ? (
         <span className={`font-mono text-xs ${positive ? "text-emerald-300" : "text-red-300"}`}>
@@ -90,7 +90,7 @@ export function MarketTicker() {
   const assets = prices?.assets ?? [];
   const tickerLabel = assets.length
     ? assets.map((asset) => asset.symbol).join("/")
-    : "BTC/ETH/APE/HYPE/BNB/SOL";
+    : "BTC/ETH/APE/HYPE/BNB/SOL/ZEC/S&P 500";
 
   return (
     <div className="market-strip">
@@ -108,7 +108,7 @@ export function MarketTicker() {
               assets.map((asset) => <PricePill asset={asset} key={asset.symbol} />)
             ) : (
               <div className="market-strip__loading">
-                Loading BTC/ETH/APE/HYPE/BNB/SOL prices...
+                Loading BTC/ETH/APE/HYPE/BNB/SOL/ZEC/S&P 500 prices...
               </div>
             )}
           </div>

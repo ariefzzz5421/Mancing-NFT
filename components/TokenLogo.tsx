@@ -1,4 +1,5 @@
 import type { MarketSymbol } from "@/lib/types";
+import Image from "next/image";
 
 type TokenLogoProps = {
   className?: string;
@@ -12,6 +13,8 @@ const tokenStyles: Record<MarketSymbol, string> = {
   ETH: "border-cyan-300/30 bg-cyan-300/10",
   HYPE: "border-emerald-300/30 bg-emerald-300/10",
   SOL: "border-fuchsia-300/30 bg-fuchsia-300/10",
+  ZEC: "border-amber-300/30 bg-amber-300/10",
+  SP500: "border-red-300/30 bg-red-300/10",
 };
 
 const tokenLogoSrc: Record<MarketSymbol, string> = {
@@ -21,6 +24,8 @@ const tokenLogoSrc: Record<MarketSymbol, string> = {
   ETH: "/token-logos/ETH.png",
   HYPE: "/token-logos/HYPE.png",
   SOL: "/token-logos/SOL.png",
+  ZEC: "/token-logos/ZEC.png",
+  SP500: "/token-logos/SP500.png",
 };
 
 export function TokenLogo({ className = "", symbol }: TokenLogoProps) {
@@ -37,12 +42,7 @@ export function TokenLogo({ className = "", symbol }: TokenLogoProps) {
       className={`inline-flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border ${tokenStyles[symbol]} ${className}`}
       title={symbol}
     >
-      {tokenLogoSrc[symbol] ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img alt="" className={imageClass} src={tokenLogoSrc[symbol]} />
-      ) : (
-        <span className="font-mono text-[0.55em] font-semibold text-blue-200">APE</span>
-      )}
+      <Image alt="" className={imageClass} src={tokenLogoSrc[symbol]} width={28} height={28} />
     </span>
   );
 }
