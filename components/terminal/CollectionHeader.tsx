@@ -3,6 +3,7 @@ import { BadgeCheck, ExternalLink } from "lucide-react";
 import type { Collection, Stats, Book } from "@/types/market";
 import { eth, price } from "@/lib/quant/book";
 import { ChainLogo } from "@/components/ChainLogo";
+import { OpenSeaDetailsLink } from "@/components/OpenSeaDetailsLink";
 export function CollectionHeader({
   collection: c,
   stats: s,
@@ -29,7 +30,7 @@ export function CollectionHeader({
           <div className="collection-placeholder">M↗</div>
         )}
         <div>
-          <h2>{c?.name ?? slug}</h2>
+          <h2 className="collection-title-line">{c?.name ?? slug} <OpenSeaDetailsLink slug={slug} name={c?.name ?? slug} /></h2>
           {c?.verified && (
             <span className="verified">
               <BadgeCheck size={13} />

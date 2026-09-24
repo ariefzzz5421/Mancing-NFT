@@ -149,6 +149,7 @@ export type MarketCollection = {
   analyzable: boolean;
   chain: string;
   floor: number | null;
+  floorSymbol?: string | null;
   floorChange24h: number | null;
   imageUrl: string | null;
   name: string;
@@ -161,6 +162,7 @@ export type MarketCollection = {
   totalVolume: number | null;
   verified: boolean;
   volume24h: number | null;
+  volumeSymbol?: string | null;
 };
 
 export type CollectionDiscoveryResponse = {

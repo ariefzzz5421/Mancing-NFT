@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Search, ArrowUpRight, BadgeCheck } from "lucide-react";
 import type { MarketCollection } from "@/lib/types";
 import { ChainLogo } from "@/components/ChainLogo";
+import { OpenSeaDetailsLink } from "@/components/OpenSeaDetailsLink";
 export function CollectionSearch() {
   const router = useRouter();
   const container = useRef<HTMLDivElement>(null);
@@ -94,8 +95,8 @@ export function CollectionSearch() {
         <div className="search-results" role="region" aria-label="OpenSea collection search results">
           <div className="search-results__heading">{results.length} OpenSea collection results · choose one</div>
           {results.map((r) => (
+            <div className="search-results__row" key={r.slug}>
             <button
-              key={r.slug}
               type="button"
               disabled={opening !== null}
               onClick={() => void openResult(r)}
@@ -109,6 +110,8 @@ export function CollectionSearch() {
               </span>
               {opening === r.slug ? <span>Opening…</span> : <ArrowUpRight size={16} />}
             </button>
+            <OpenSeaDetailsLink slug={r.slug} name={r.name} />
+            </div>
           ))}
         </div>
       )}

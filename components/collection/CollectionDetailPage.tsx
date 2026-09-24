@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { WatchlistStar } from "@/components/watchlist/WatchlistPicker";
+import { OpenSeaDetailsLink } from "@/components/OpenSeaDetailsLink";
 import { ActivityTable } from "@/components/collection/ActivityTable";
 import { BidSupportCard } from "@/components/BidSupportCard";
 import { CollectionSummary } from "@/components/CollectionSummary";
@@ -322,6 +323,7 @@ export function CollectionDetailPage({ chain, slug }: CollectionDetailPageProps)
               <p><Link href="/">Dashboard</Link> / Collection</p>
               <div className="collection-toolbar__titleline">
                 <h1>{data?.collection.name ?? activeItem.name ?? slug}</h1>
+                <OpenSeaDetailsLink slug={slug} name={data?.collection.name ?? activeItem.name ?? slug} />
                 <NetworkBadge chain={chain} />
               </div>
               <span>{slug}</span>

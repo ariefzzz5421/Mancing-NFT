@@ -2,13 +2,24 @@
 import { useState } from "react";
 import type { Book } from "@/types/market";
 import { sweep, wei, eth, liquidity } from "@/lib/quant/book";
-export function SweepCalculator({ book }: { book: Book | null }) {
+import { TokenLogo } from "@/components/TokenLogo";
+
+export function SweepCalculator({ book, ethUsd }: { book: Book | null; ethUsd: number | null }) {
   const [target, setTarget] = useState("");
   const t = wei(target);
   const s =
     book && !book.errors.length && t
       ? sweep(book.asks, t, book.complete)
       : null;
+  const usd = (amount: string | bigint | null | undefined) => amount !== null && amount !== undefined && ethUsd !== null
+    ? `≈ ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(Number(BigInt(amount)) / 1e18 * ethUsd)}`
+    : null;
+  const values: Array<[string, string | bigint | null | undefined]> = [
+    ["Capital required", s?.capital],
+    ["Average purchase", s?.average],
+    ["Highest execution", s?.highest],
+    ["Theoretical next floor", s?.next],
+  ];
   return (
     <section className="t-panel">
       <div className="panel-title">SWEEP TO TARGET</div>
@@ -20,20 +31,14 @@ export function SweepCalculator({ book }: { book: Book | null }) {
           placeholder="0.016"
           onChange={(e) => setTarget(e.target.value)}
         />
+        {t && <span className="sweep-target-usd">Indicative target {usd(t) ?? "USD quote unavailable"}</span>}
       </label>
       <dl className="metric-list">
-        {[
-          ["NFTs to purchase", s?.quantity ?? "—"],
-          ["Capital required", eth(s?.capital)],
-          ["Average purchase", eth(s?.average)],
-          ["Highest execution", eth(s?.highest)],
-          ["Theoretical next floor", eth(s?.next)],
-        ].map(([l, v]) => (
-          <div key={l}>
-            <dt>{l}</dt>
-            <dd>{v}</dd>
-          </div>
-        ))}
+        <div><dt>NFTs to purchase</dt><dd>{s?.quantity ?? "—"}</dd></div>
+        {values.map(([label, amount]) => <div key={label}>
+          <dt>{label}</dt>
+          <dd className="sweep-value"><span><TokenLogo symbol="ETH" className="sweep-eth-icon" />{eth(amount)} ETH</span><small>{usd(amount) ?? "USD quote unavailable"}</small></dd>
+        </div>)}
       </dl>
       <p className="t-note">
         {book?.complete

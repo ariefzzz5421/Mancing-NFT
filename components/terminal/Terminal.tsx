@@ -159,7 +159,7 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
             selected={selected}
             retry={() => void load()}
           />
-          <SweepCalculator book={book} />
+          <SweepCalculator book={book} ethUsd={ethUsd.priceUsd} />
         </div>
         <aside className="terminal-trade">
           <button className="terminal-pane-toggle terminal-pane-toggle--right" type="button" aria-label={rightCollapsed ? "Expand execution panel" : "Minimize execution panel"} aria-expanded={!rightCollapsed} onClick={() => setRightCollapsed((value) => !value)}><span>{rightCollapsed ? "EXECUTION" : "MINIMIZE"}</span>{rightCollapsed ? "<" : ">"}</button>

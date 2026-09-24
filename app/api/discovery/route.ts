@@ -26,6 +26,7 @@ export async function GET(nextRequest: NextRequest) {
   const sortValue = nextRequest.nextUrl.searchParams.get("sort") ?? "one_day_volume";
   const sort = sorts.has(sortValue) ? sortValue : "one_day_volume";
   const capMode = sort === "floor_cap_estimate" && Boolean(chain);
+  const rankingsOnly = nextRequest.nextUrl.searchParams.get("rankings") === "1" && !capMode;
   const [topResult, trendingResult] = await Promise.allSettled([
     fetchTopCollections(20, sort === "floor_cap_estimate" ? "one_day_volume" : sort, chain),
     fetchTrendingCollections(20, chain),
@@ -59,6 +60,15 @@ export async function GET(nextRequest: NextRequest) {
     warnings,
   };
 
+  // The overview renders rankings immediately, then requests cached statistics
+  // for visible collections. Keep the full response for other API consumers.
+  if (rankingsOnly) {
+    return NextResponse.json(payload, {
+      status: payload.top.length || payload.trending.length ? 200 : 502,
+      headers: { "Cache-Control": "public, s-maxage=120, stale-while-revalidate=180" },
+    });
+  }
+
   // Reuse metrics already present in the leaderboard. Limit additional stats
   // calls and batch them in pairs to avoid a burst against the OpenSea key.
   const topBySlug = new Map(payload.top.map((item) => [item.slug, item]));
@@ -66,7 +76,7 @@ export async function GET(nextRequest: NextRequest) {
     const top = topBySlug.get(item.slug);
     return top ? { ...item, floor: item.floor ?? top.floor, volume24h: item.volume24h ?? top.volume24h, sales24h: item.sales24h ?? top.sales24h, owners: item.owners ?? top.owners } : item;
   });
-  const needsStats = [...payload.trending.slice(0, 4), ...payload.top.slice(0, capMode ? 6 : 8)]
+  const needsStats = [...payload.trending.slice(0, capMode ? 10 : 4), ...payload.top.slice(0, capMode ? 10 : 8)]
     .filter((item, index, items) => items.findIndex((candidate) => candidate.slug === item.slug) === index)
     .filter((item) => item.floor === null || item.volume24h === null);
   const statsBySlug = new Map<string, ReturnType<typeof normalizeStats>>();
@@ -86,7 +96,7 @@ export async function GET(nextRequest: NextRequest) {
     return stats ? { ...item, floor: item.floor ?? stats.floor, volume24h: item.volume24h ?? stats.volume, sales24h: item.sales24h ?? stats.sales, owners: item.owners ?? stats.owners } : item;
   });
   if (capMode) {
-    const candidates = payload.top.slice(0, 6);
+    const candidates = payload.top.slice(0, 10);
     const supplyBySlug = new Map<string, number>();
     for (let index = 0; index < candidates.length; index += 2) {
       const pair = candidates.slice(index, index + 2);
@@ -100,7 +110,7 @@ export async function GET(nextRequest: NextRequest) {
     payload.top = candidates.map((item) => ({ ...item, supply: supplyBySlug.get(item.slug) ?? item.supply }))
       .sort((a, b) => (b.floor !== null && b.supply ? b.floor * b.supply : -1) - (a.floor !== null && a.supply ? a.floor * a.supply : -1))
       .map((item, index) => ({ ...item, rank: index + 1 }));
-    warnings.push("Floor-cap estimate ranks only six 24h-volume candidates on the selected chain. It is not a global market-cap ranking.");
+    warnings.push("Floor-cap estimate ranks only ten 24h-volume candidates on the selected chain. It is not a global market-cap ranking.");
   }
   payload.trending = payload.trending.map((item) => {
     const stats = statsBySlug.get(item.slug);

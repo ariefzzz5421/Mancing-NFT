@@ -130,6 +130,7 @@ function normalizeCollection(row: unknown, rank: number): MarketCollection | nul
       ["floorPrice"],
       ["floor"],
     ]),
+    floorSymbol: firstString(row, [["stats", "floor_price_symbol"], ["statistics", "floor_price_symbol"], ["floor_price_symbol"]]),
     floorChange24h: firstNumber(row, [
       ["stats", "one_day_floor_price_change"],
       ["statistics", "one_day_floor_price_change"],
@@ -184,6 +185,7 @@ function normalizeCollection(row: unknown, rank: number): MarketCollection | nul
       ["volume_24h"],
       ["volume"],
     ]),
+    volumeSymbol: firstString(row, [["stats", "one_day_volume_symbol"], ["statistics", "one_day_volume_symbol"], ["volume_symbol"]]),
   };
 }
 

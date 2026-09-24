@@ -4,6 +4,7 @@ import Link from "next/link";
 import { eth, price, spread, edge, liquidity } from "@/lib/quant/book";
 import type { Book } from "@/types/market";
 import type { MarketCollection } from "@/lib/types";
+import { OpenSeaDetailsLink } from "@/components/OpenSeaDetailsLink";
 export function ScannerTable() {
   const [rows, setRows] = useState<MarketCollection[]>([]),
     [books, setBooks] = useState<Record<string, Book>>({}),
@@ -138,7 +139,7 @@ export function ScannerTable() {
               return (
                 <tr key={c.slug}>
                   <td>
-                    <Link href={`/terminal/${c.slug}`}>{c.name} ↗</Link>
+                    <span className="collection-link-pair"><Link href={`/terminal/${c.slug}`}>{c.name} ↗</Link><OpenSeaDetailsLink slug={c.slug} name={c.name} /></span>
                   </td>
                   <td>{price(c.floor)}</td>
                   <td className="positive">{eth(b?.bids[0]?.priceWei)}</td>

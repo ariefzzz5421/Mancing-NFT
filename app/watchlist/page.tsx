@@ -6,6 +6,7 @@ import { useWatchlist } from "@/lib/watchlist";
 import { useWallet } from "@/components/wallet/WalletProvider";
 import { CollectionSearch } from "@/components/terminal/CollectionSearch";
 import { WatchlistPicker, WatchlistStar, type WatchlistCandidate } from "@/components/watchlist/WatchlistPicker";
+import { OpenSeaDetailsLink } from "@/components/OpenSeaDetailsLink";
 
 export default function Page() {
   const watchlist = useWatchlist();
@@ -103,6 +104,7 @@ export default function Page() {
           <strong>{item.name ?? item.slug}</strong><small>{item.chain} · {item.notes ?? "Open terminal"}</small>
         </Link>
         <div className="watchlist-entry__controls">
+          <OpenSeaDetailsLink slug={item.slug} name={item.name ?? item.slug} />
           <select aria-label={`Group for ${item.name ?? item.slug}`} value={item.groupId ?? ""} onChange={(event) => watchlist.assignGroup(item.slug, item.chain, event.target.value || null)}>
             <option value="">Default</option>
             {watchlist.groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
