@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     if (req.headers.get("origin") !== new URL(req.url).origin)
       throw new MarketError("Same-origin request required", 403);
     const b = await req.json();
-    if (!isAddress(b.address) || !/^0x[a-f0-9]{64}$/i.test(b.hash))
+    if (!isAddress(b.address) || !isAddress(b.contract) || !/^0x[a-f0-9]{64}$/i.test(b.hash))
       throw new MarketError("Invalid buyer or order", 400);
     const raw = record(
       await request(`/orders/chain/ethereum/protocol/${SEAPORT}/${b.hash}`, 0),
@@ -18,10 +18,11 @@ export async function POST(req: Request) {
     if (
       !listing ||
       listing.quantity !== 1 ||
+      listing.tokenAddress?.toLowerCase() !== b.contract.toLowerCase() ||
       record(record(raw.price).current).currency !== "ETH"
     )
       throw new MarketError(
-        "Only active single-item ETH listings can be bought here",
+        "Listing is inactive, changed collection, or is not a single-item ETH listing",
         400,
       );
     const r = record(
@@ -56,6 +57,7 @@ export async function POST(req: Request) {
         value: tx.value,
         priceWei: listing.priceWei,
         tokenId: listing.tokenId,
+        contract: listing.tokenAddress,
         hash: listing.orderHash,
         expiresAt: Date.now() + 45000,
       },

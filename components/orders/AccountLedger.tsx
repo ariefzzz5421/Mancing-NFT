@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { OrderHistory } from "./OrderHistory";
+import { FlipPositions } from "./FlipPositions";
 import type { OrderComponents } from "@opensea/seaport-js/lib/types";
 import type { NormalizedOrder, Book, Stats } from "@/types/market";
 import {
@@ -141,6 +142,7 @@ export function AccountLedger({
               </Link>
             </p>
           )}
+          {view === "positions" && <FlipPositions address={w.address} />}
           {view !== "positions" && (
             <div className="ledger-tabs">
               {(view === "wallet"

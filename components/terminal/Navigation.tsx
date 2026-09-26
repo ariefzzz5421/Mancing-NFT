@@ -6,7 +6,8 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Activity, Bookmark, ChartNoAxesCombined, Fish, LayoutDashboard, ListOrdered, Menu, ScanSearch, Settings2, Wallet, X } from "lucide-react";
 import { MarketStatus } from "./MarketStatus";
-import { WalletConnect } from "@/components/wallet/WalletProvider";
+import { CollectionSearch } from "./CollectionSearch";
+import { WalletConnect, useWallet } from "@/components/wallet/WalletProvider";
 
 const routes = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
@@ -22,13 +23,16 @@ const routes = [
 
 export function Navigation() {
   const path = usePathname();
+  const wallet = useWallet();
   const [menuOpen, setMenuOpen] = useState(false);
   const active = (href: string) => href === "/" ? path === "/" : href.startsWith("/terminal/") ? path.startsWith("/terminal/") : path === href || path.startsWith(`${href}/`);
   const links = routes.map(({ href, label, icon: Icon }) => <Link key={href} href={href} title={label} aria-label={label} aria-current={active(href) ? "page" : undefined} onClick={() => setMenuOpen(false)}><Icon size={19} aria-hidden="true" /><span>{label}</span></Link>);
   return <>
     <header className="terminal-chrome">
       <div className="terminal-nav">
-        <Link className="terminal-brand" href="/"><span className="terminal-brand__logo"><Image src="/icon.svg" alt="" width={52} height={52} priority /></span><span><strong>Mancing NFT</strong><small>NFT Quant Trading Terminal</small></span></Link>
+        <Link className="terminal-brand" href="/"><span className="terminal-brand__logo"><Image src="/icon.svg" alt="" width={52} height={52} priority /></span><span><strong>Mancing NFT</strong><small>NFT Quant Execution Terminal</small></span></Link>
+        <div className="terminal-nav__search"><CollectionSearch /></div>
+        {wallet.address && <div className="terminal-nav__balances"><span>ETH <b>{wallet.eth ?? "—"}</b></span><span>WETH <b>{wallet.weth ?? "—"}</b></span></div>}
         <WalletConnect />
       </div>
       <MarketStatus />

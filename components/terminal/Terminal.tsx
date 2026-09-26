@@ -1,11 +1,10 @@
 "use client";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { CollectionSearch } from "./CollectionSearch";
 import { CollectionHeader } from "./CollectionHeader";
-import { SpreadPanel } from "./SpreadPanel";
 import { OrderBook } from "./OrderBook";
-import { TradePanel } from "./TradePanel";
+import { TradePanel, type TradeMode } from "./TradePanel";
+import { RecentActivity } from "./RecentActivity";
 import { NetEdgeCalculator } from "./NetEdgeCalculator";
 import { SweepCalculator, LiquidityPanel } from "./SweepCalculator";
 import { CollectionPriceTape } from "./CollectionPriceTape";
@@ -21,17 +20,15 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
     [book, setBook] = useState<Book | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
-    [tab, setTab] = useState("Overview"),
+    [tab, setTab] = useState("Chart"),
     [entry, setEntry] = useState(""),
     [exit, setExit] = useState(""),
     [quantity, setQuantity] = useState(1),
-    [mode, setMode] = useState<"BUY" | "OFFER" | "LIST">("OFFER"),
+    [mode, setMode] = useState<TradeMode>("OFFER"),
     [selected, setSelected] = useState(""),
     [selectedOrder, setSelectedOrder] = useState<string | null>(null),
     [leftCollapsed, setLeftCollapsed] = useState(false),
-    [rightCollapsed, setRightCollapsed] = useState(false),
-    [showAnalytics, setShowAnalytics] = useState(false);
-  const analyticsRef = useRef<HTMLDivElement>(null);
+    [rightCollapsed, setRightCollapsed] = useState(false);
   const ethUsd = useLiveEthPrice();
   const load = useCallback(
     async (signal?: AbortSignal) => {
@@ -78,13 +75,6 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
       clearInterval(timer);
     };
   }, [load]);
-  useEffect(() => {
-    const target = analyticsRef.current;
-    if (!target || !('IntersectionObserver' in window)) return;
-    const observer = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting)) { setShowAnalytics(true); observer.disconnect(); } }, { rootMargin: "300px" });
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, []);
   function select(l: Level, s: Side) {
     setRightCollapsed(false);
     setSelected(`${s}:${l.priceWei}`);
@@ -110,12 +100,8 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
         </div>
         <WatchlistStar item={{ slug, chain: "ethereum", name: collection?.name ?? slug, imageUrl: collection?.image }} className="terminal-star" showText />
       </div>
-      <CollectionSearch />
       <CollectionPriceTape collection={collection} stats={stats} book={book} slug={slug} />
-      <SpreadPanel
-        bid={book?.bids[0]?.priceWei}
-        ask={book?.asks[0]?.priceWei}
-      />
+      <CollectionHeader collection={collection} stats={stats} book={book} slug={slug} />
       {error && (
         <div className="t-error" role="alert">
           {error} <button onClick={() => void load()}>Retry</button>
@@ -126,32 +112,20 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
         role="tablist"
         aria-label="Terminal sections"
       >
-        {["Overview", "Book", "Trade", "Analytics"].map((t) => (
+        {["Chart", "Book", "Activity", "Trade", "Analytics"].map((t) => (
           <button
             role="tab"
             aria-selected={tab === t}
             key={t}
-            onClick={() => { setTab(t); if (t === "Analytics") setShowAnalytics(true); }}
+            onClick={() => setTab(t)}
           >
             {t}
           </button>
         ))}
       </div>
-      <div className={`terminal-grid mobile-${tab.toLowerCase()}${leftCollapsed ? " terminal-grid--left-collapsed" : ""}${rightCollapsed ? " terminal-grid--right-collapsed" : ""}`}>
-        <aside className="terminal-overview">
-          <button className="terminal-pane-toggle terminal-pane-toggle--left" type="button" aria-label={leftCollapsed ? "Expand collection panel" : "Minimize collection panel"} aria-expanded={!leftCollapsed} onClick={() => setLeftCollapsed((value) => !value)}>{leftCollapsed ? ">" : "<"}<span>{leftCollapsed ? "COLLECTION" : "MINIMIZE"}</span></button>
-          {!leftCollapsed && <>
-          <CollectionHeader
-            collection={collection}
-            stats={stats}
-            book={book}
-            slug={slug}
-          />
-          <LiquidityPanel book={book} />
-          <TopHolders slug={slug} />
-          </>}
-        </aside>
-        <div className="terminal-book">
+      <div className={`execution-workspace mobile-${tab.toLowerCase()}${rightCollapsed ? " execution-workspace--trade-collapsed" : ""}`}>
+        <div className="workspace-chart"><PriceHistoryChart slug={slug} floor={stats?.floor ?? null} /></div>
+        <div className="workspace-book">
           <OrderBook
             book={book}
             loading={loading}
@@ -159,12 +133,13 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
             selected={selected}
             retry={() => void load()}
           />
-          <SweepCalculator book={book} ethUsd={ethUsd.priceUsd} />
         </div>
-        <aside className="terminal-trade">
+        <div className="workspace-activity"><RecentActivity slug={slug} /></div>
+        <aside className="workspace-trade">
           <button className="terminal-pane-toggle terminal-pane-toggle--right" type="button" aria-label={rightCollapsed ? "Expand execution panel" : "Minimize execution panel"} aria-expanded={!rightCollapsed} onClick={() => setRightCollapsed((value) => !value)}><span>{rightCollapsed ? "EXECUTION" : "MINIMIZE"}</span>{rightCollapsed ? "<" : ">"}</button>
           {!rightCollapsed && <>
           <TradePanel
+            key={slug}
             collection={collection}
             slug={slug}
             entry={entry}
@@ -183,9 +158,11 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
           </>}
         </aside>
       </div>
-      <div ref={analyticsRef} className={`terminal-analytics ${tab === "Analytics" ? "mobile-visible" : ""}`}>
-        {showAnalytics && <PriceHistoryChart slug={slug} floor={stats?.floor ?? null} />}
+      <div className={`terminal-insights${tab === "Analytics" ? " terminal-insights--mobile-active" : ""}`}>
+        <button className="terminal-pane-toggle terminal-pane-toggle--left" type="button" aria-expanded={!leftCollapsed} onClick={() => setLeftCollapsed((value) => !value)}>{leftCollapsed ? "+ SHOW LIQUIDITY RESEARCH" : "− HIDE LIQUIDITY RESEARCH"}</button>
+        {!leftCollapsed && <div className="terminal-insights__grid"><LiquidityPanel book={book} /><TopHolders slug={slug} /><SweepCalculator book={book} ethUsd={ethUsd.priceUsd} /></div>}
       </div>
+      <div className="mobile-execution-dock" aria-label="Trading actions">{(["BUY", "OFFER", "LIST", "FLIP"] as const).map((action) => <button key={action} type="button" aria-pressed={mode === action && tab === "Trade"} onClick={() => { if (action === "FLIP") { setQuantity(1); if (book?.bids[0]) setEntry(eth(book.bids[0].priceWei)); } setMode(action); setRightCollapsed(false); setTab("Trade"); }}>{action === "FLIP" ? "FLIP" : action}</button>)}</div>
     </main>
   );
 }

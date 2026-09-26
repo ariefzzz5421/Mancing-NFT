@@ -2,9 +2,11 @@
 import { useEffect, useState } from "react";
 import type { MarketPricesResponse } from "@/lib/types";
 import { TokenLogo } from "@/components/TokenLogo";
+import type { Health } from "@/types/market";
 export function MarketStatus() {
   const [prices, setPrices] = useState<MarketPricesResponse | null>(null),
     [gas, setGas] = useState<string | null>(null),
+    [health, setHealth] = useState<Health | null>(null),
     [gasUpdatedAt, setGasUpdatedAt] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
@@ -15,9 +17,13 @@ export function MarketStatus() {
     }
     void load();
     const id = setInterval(load, 60000);
+    const checkHealth = () => { if (!document.hidden) void fetch("/api/health").then((r) => r.json()).then((value: Health) => { if (active) setHealth(value); }).catch(() => {}); };
+    checkHealth();
+    const healthId = setInterval(checkHealth, 300000);
     return () => {
       active = false;
       clearInterval(id);
+      clearInterval(healthId);
     };
   }, []);
   const eth = prices?.assets.find((asset) => asset.symbol === "ETH")?.priceUsd ?? null;
@@ -56,6 +62,7 @@ export function MarketStatus() {
       <span>
         NETWORK <b>Ethereum</b>
       </span>
+      <span className={health?.state === "Operational" ? "positive" : "status-warning"}>OPENSEA <b>{health?.state ?? "Checking…"}</b></span>
       <span className="status-time">
         LAST CHECK{" "}
         <b>

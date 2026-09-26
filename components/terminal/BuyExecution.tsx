@@ -10,14 +10,19 @@ type Quote = {
   data: Hex;
   value: string;
   tokenId: string;
+  contract: string;
+  hash: string;
+  priceWei: string;
   expiresAt: number;
 };
 export function BuyExecution({
   hash,
   royalty,
+  contract,
 }: {
   hash: string | null;
   royalty: boolean;
+  contract: string | null;
 }) {
   const w = useWallet(),
     [quote, setQuote] = useState<Quote | null>(null),
@@ -27,7 +32,7 @@ export function BuyExecution({
     setBusy(true);
     setQuote(null);
     try {
-      if (!hash || !w.address)
+      if (!hash || !w.address || !contract)
         throw Error("Select an ask and connect your wallet.");
       const r = await fetch("/api/trading/buy", {
         method: "POST",
@@ -35,6 +40,7 @@ export function BuyExecution({
         body: JSON.stringify({
           hash,
           address: w.address,
+          contract,
           includeRoyalty: royalty,
         }),
       });
@@ -70,11 +76,24 @@ export function BuyExecution({
         accounts[0]?.toLowerCase() !== w.address.toLowerCase()
       )
         throw Error("Wallet changed. Review a fresh quote.");
+      // The reviewed quote is a price ceiling. Re-fetch fulfillment immediately
+      // before wallet submission; quotes are never cached or trusted after review.
+      const response = await fetch("/api/trading/buy", {
+        method: "POST", headers: { "Content-Type": "application/json" }, cache: "no-store",
+        body: JSON.stringify({ hash, address: w.address, contract, includeRoyalty: royalty }),
+      });
+      const fresh: Quote & { error?: string } = await response.json();
+      if (!response.ok) throw Error(fresh.error ?? "Listing no longer active. Review again.");
+      if (fresh.hash !== quote.hash || fresh.contract?.toLowerCase() !== quote.contract.toLowerCase() ||
+          fresh.tokenId !== quote.tokenId || fresh.priceWei !== quote.priceWei ||
+          BigInt(fresh.value) > BigInt(quote.value) || fresh.to.toLowerCase() !== SEAPORT.toLowerCase() ||
+          Date.now() > fresh.expiresAt)
+        throw Error("Listing or fulfillment price changed. Review a new quote before buying.");
       const tx = {
         account: w.address,
-        to: quote.to,
-        data: quote.data,
-        value: BigInt(quote.value),
+        to: fresh.to,
+        data: fresh.data,
+        value: BigInt(fresh.value),
       };
       await publicClient.call(tx);
       const gas = await publicClient.estimateGas(tx);

@@ -22,17 +22,17 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://nft-analytic-dashboard.vercel.app"),
   title: {
-    default: "Mancing NFT | NFT Quant Trading Terminal",
+    default: "Mancing NFT | NFT Quant Execution Terminal",
     template: "%s | Mancing NFT",
   },
   openGraph: {
     title: "Mancing NFT",
-    description: "NFT Quant Trading Terminal",
+    description: "NFT Quant Execution Terminal",
     siteName: "Mancing NFT",
     type: "website",
   },
   description:
-    "NFT Quant Trading Terminal. Explore collection liquidity, bid/ask depth, spread and estimated net edge.",
+    "NFT Quant Execution Terminal. Inspect collection liquidity, bid/ask depth, spread and estimated net edge before wallet-signed execution.",
   icons: {
     icon: "/icon.svg",
   },

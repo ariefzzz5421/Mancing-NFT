@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import { BuyExecution } from "./BuyExecution";
+import { FlipOfferStatus } from "./FlipOfferStatus";
 import type { Collection, Book } from "@/types/market";
-import { eth, wei } from "@/lib/quant/book";
+import { eth, wei, edge, spread } from "@/lib/quant/book";
 import {
   useWallet,
   injected,
@@ -18,6 +19,7 @@ type NFT = {
   name: string;
   standard: string;
 };
+export type TradeMode = "BUY" | "OFFER" | "LIST" | "FLIP";
 export function TradePanel({
   collection,
   slug,
@@ -41,8 +43,8 @@ export function TradePanel({
   setExit: (s: string) => void;
   quantity: number;
   setQuantity: (n: number) => void;
-  mode: "BUY" | "OFFER" | "LIST";
-  setMode: (s: "BUY" | "OFFER" | "LIST") => void;
+  mode: TradeMode;
+  setMode: (s: TradeMode) => void;
   book: Book | null;
   selectedOrder: string | null;
   ethUsd: number | null;
@@ -50,6 +52,7 @@ export function TradePanel({
   const wallet = useWallet(),
     [hours, setHours] = useState(24),
     [royalty, setRoyalty] = useState(true),
+    [flipStrategy, setFlipStrategy] = useState<"MATCH" | "TICK" | "CUSTOM">("MATCH"),
     [nfts, setNfts] = useState<NFT[]>([]),
     [nftCursor, setNftCursor] = useState<string | null>(null),
     [token, setToken] = useState(""),
@@ -161,7 +164,7 @@ export function TradePanel({
         throw Error("Switch your wallet to Ethereum mainnet.");
       if (!total) throw Error("Enter a valid price and quantity.");
       if (
-        mode === "OFFER" &&
+        (mode === "OFFER" || mode === "FLIP") &&
         (wallet.weth === null || (wei(wallet.weth) ?? 0n) < total)
       )
         throw Error(
@@ -173,7 +176,7 @@ export function TradePanel({
         body: JSON.stringify({
           address: wallet.address,
           slug,
-          mode,
+          mode: mode === "FLIP" ? "OFFER" : mode,
           price: mode === "LIST" ? exit : entry,
           quantity: mode === "LIST" ? 1 : quantity,
           hours,
@@ -228,6 +231,12 @@ export function TradePanel({
         Number(chain) !== 1
       )
         throw Error("Wallet account or network changed. Prepare again.");
+      const sessionResponse = await fetch("/api/auth/session", { cache: "no-store" });
+      const session = await sessionResponse.json();
+      if (session.address?.toLowerCase() !== prepared.account.toLowerCase()) {
+        setStatus("Sign in with this wallet to store and submit your order.");
+        await wallet.signIn();
+      }
       setStatus(
         "Confirm required approvals and the order signature in your wallet.",
       );
@@ -237,26 +246,30 @@ export function TradePanel({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          { mode, order, criteria: prepared.criteria },
+          { mode: mode === "FLIP" ? "OFFER" : mode, slug, order, criteria: prepared.criteria },
           (_, v) => (typeof v === "bigint" ? v.toString() : v),
         ),
       });
       const d = await r.json();
       if (!r.ok) throw Error(d.error);
-      setStatus(`Order submitted: ${d.order_hash ?? "Accepted by OpenSea"}`);
+      let backupSaved = false;
       if (d.order_hash && wallet.address) {
-        const { saveOrder } = await import("@/lib/web3/order-history");
-        saveOrder(wallet.address, {
-          hash: d.order_hash,
-          collection: slug,
-          side: mode,
-          price: mode === "LIST" ? exit : entry,
-          quantity: mode === "LIST" ? 1 : quantity,
-          created: Date.now(),
-          expiration: Number(order.parameters.endTime) * 1000,
-          status: "ACTIVE",
-        });
+        try {
+          const { saveOrder } = await import("@/lib/web3/order-history");
+          saveOrder(wallet.address, {
+            hash: d.order_hash,
+            collection: slug,
+            side: mode === "FLIP" ? "OFFER" : mode,
+            price: mode === "LIST" ? exit : entry,
+            quantity: mode === "LIST" ? 1 : quantity,
+            created: Date.now(),
+            expiration: Number(order.parameters.endTime) * 1000,
+            status: "ACTIVE",
+          });
+          backupSaved = true;
+        } catch { /* The OpenSea submission already succeeded; report storage separately. */ }
       }
+      setStatus(`Order submitted: ${d.order_hash ?? "Accepted by OpenSea"}${d.historySaved === false ? backupSaved ? ". Cloud history unavailable; browser backup saved." : ". History could not be saved; copy the order hash." : ""}`);
       setPrepared(null);
       void wallet.refresh();
     } catch (e) {
@@ -267,6 +280,19 @@ export function TradePanel({
       setBusy(false);
     }
   }
+  const bestBid = book?.bids[0]?.priceWei;
+  const bestAsk = book?.asks[0]?.priceWei;
+  const flipGross = spread(bestBid, bestAsk);
+  const flipEntry = wei(entry);
+  const flipExit = wei(exit);
+  const feeBps = collection?.fees.filter((fee) => fee.required).reduce((sum, fee) => sum + fee.bps, 0) ?? 0;
+  const royaltyBps = royalty ? collection?.fees.filter((fee) => !fee.required).reduce((sum, fee) => sum + fee.bps, 0) ?? 0 : 0;
+  const flipEdge = flipEntry && flipExit ? edge(flipEntry, flipExit, 1, feeBps, royaltyBps, 500000000000000n, 50) : null;
+  function chooseStrategy(strategy: typeof flipStrategy) {
+    setFlipStrategy(strategy);
+    if (!bestBid || strategy === "CUSTOM") return;
+    setEntry(eth(BigInt(bestBid) + (strategy === "TICK" ? 100000000000000n : 0n)));
+  }
   return (
     <section className="t-panel trade-panel">
       <div className="panel-title">
@@ -274,26 +300,46 @@ export function TradePanel({
         <span>NON-CUSTODIAL</span>
       </div>
       <div className="trade-tabs">
-        {(["BUY", "OFFER", "LIST"] as const).map((t) => (
-          <button key={t} aria-pressed={mode === t} onClick={() => setMode(t)}>
-            {t}
+        {(["BUY", "OFFER", "LIST", "FLIP"] as const).map((t) => (
+          <button key={t} aria-pressed={mode === t} onClick={() => { if (t === "FLIP") { setQuantity(1); if (bestBid && flipStrategy === "MATCH") setEntry(eth(bestBid)); } setMode(t); }}>
+            {t === "FLIP" ? "FLIP FLOP" : t}
           </button>
         ))}
       </div>
       <div className="trade-body">
         <h2>
-          {mode === "OFFER"
+          {mode === "FLIP"
+            ? "Flip Flop · offer to inventory"
+            : mode === "OFFER"
             ? "Place collection offer"
             : mode === "LIST"
               ? "List your NFT"
               : "Buy / list comparison"}
         </h2>
         <p className="t-muted">{collection?.name ?? slug}</p>
+        {mode === "FLIP" && <div className="flip-workflow">
+          <div className="flip-workflow__steps">OFFER <span>→</span> FILL <span>→</span> VERIFY NFT <span>→</span> LIST <span>→</span> EXIT</div>
+          <div className="flip-strategies" role="group" aria-label="Offer pricing strategy">
+            {(["MATCH", "TICK", "CUSTOM"] as const).map((strategy) => <button key={strategy} type="button" aria-pressed={flipStrategy === strategy} onClick={() => chooseStrategy(strategy)}>{strategy === "MATCH" ? "Match best bid" : strategy === "TICK" ? "Bid + 0.0001 Ξ" : "Custom bid"}</button>)}
+          </div>
+          <dl className="metric-list flip-metrics">
+            <div><dt>Best bid</dt><dd>{eth(bestBid)} WETH</dd></div>
+            <div><dt>Current ask</dt><dd>{eth(bestAsk)} ETH</dd></div>
+            <div><dt>Gross spread</dt><dd>{flipGross ? `${eth(flipGross.absolute)} ETH · ${(flipGross.bps / 100).toFixed(2)}%` : "—"}</dd></div>
+            <div><dt>Marketplace fee</dt><dd>{flipEdge ? `−${eth(flipEdge.fees)} ETH` : "—"}</dd></div>
+            <div><dt>Creator royalty</dt><dd>{flipEdge ? `−${eth(flipEdge.royalty)} ETH` : "—"}</dd></div>
+            <div><dt>Gas + slippage assumption</dt><dd>{flipEdge ? `−${eth(500000000000000n + flipEdge.slippage)} ETH` : "—"}</dd></div>
+          </dl>
+          <div className="flip-result"><span>ESTIMATED NET</span><strong className={flipEdge && flipEdge.net >= 0n ? "positive" : "negative"}>{flipEdge ? `${eth(flipEdge.net)} ETH` : "—"}</strong><span>ROI {flipEdge ? `${(flipEdge.roiBps / 100).toFixed(2)}%` : "—"}</span></div>
+          <p className="t-note">Estimate for one NFT using collection fees, 0.0005 ETH gas and 0.5% slippage. A listing is not a guaranteed exit. Fills and token ownership must be verified before listing.</p>
+        </div>}
+        {mode === "FLIP" && <FlipOfferStatus slug={slug} collection={collection} bestAsk={bestAsk} onList={(tokenId, listPrice) => { setToken(tokenId); setExit(listPrice); setMode("LIST"); }} />}
         {mode === "LIST" && (
           <label className="t-field">
             Owned NFT (paginated collection assets)
             <select value={token} onChange={(e) => setToken(e.target.value)}>
               <option value="">Select owned ERC-721</option>
+              {token && !nfts.some((n) => n.tokenId === token) && <option value={token}>NFT #{token} · verified fill (check wallet ownership)</option>}
               {nfts.map((n) => (
                 <option key={n.tokenId} value={n.tokenId}>
                   {n.name} / #{n.tokenId}
@@ -310,15 +356,16 @@ export function TradePanel({
         <label className="t-field">
           {mode === "LIST"
             ? "Listing price / ETH"
-            : mode === "OFFER"
+            : mode === "OFFER" || mode === "FLIP"
               ? "Offer price / WETH"
               : "Buy price / ETH"}
           <input
             inputMode="decimal"
             value={mode === "LIST" ? exit : entry}
-            onChange={(e) =>
-              (mode === "LIST" ? setExit : setEntry)(e.target.value)
-            }
+            onChange={(e) => {
+              if (mode === "FLIP") setFlipStrategy("CUSTOM");
+              (mode === "LIST" ? setExit : setEntry)(e.target.value);
+            }}
             placeholder="0.013"
           />
         </label>
@@ -332,6 +379,7 @@ export function TradePanel({
                 max="100"
                 step="1"
                 value={quantity}
+                disabled={mode === "FLIP"}
                 onChange={(e) => setQuantity(Number(e.target.value))}
               />
             </label>
@@ -378,7 +426,7 @@ export function TradePanel({
           </div>
           <div>
             <dt>Estimated total</dt>
-            <dd>{eth(total)} {mode === "OFFER" ? "WETH" : "ETH"}<small className="execution-usd">{totalUsd === null ? "USD —" : `≈ $${totalUsd.toLocaleString("en-US", { maximumFractionDigits: 2 })}`}</small></dd>
+            <dd>{eth(total)} {mode === "OFFER" || mode === "FLIP" ? "WETH" : "ETH"}<small className="execution-usd">{totalUsd === null ? "USD —" : `≈ $${totalUsd.toLocaleString("en-US", { maximumFractionDigits: 2 })}`}</small></dd>
           </div>
           <div>
             <dt>Gas</dt>
@@ -399,6 +447,7 @@ export function TradePanel({
               key={`${selectedOrder}:${wallet.address}:${wallet.chain}:${royalty}`}
               hash={selectedOrder}
               royalty={royalty}
+              contract={collection?.contract ?? null}
             />
           </>
         ) : (
@@ -416,8 +465,8 @@ export function TradePanel({
           >
             {busy
               ? "Preparing…"
-              : mode === "OFFER"
-                ? "Review offer"
+              : mode === "OFFER" || mode === "FLIP"
+                ? "Review offer · wallet signature required"
                 : "Review listing"}
           </button>
         )}

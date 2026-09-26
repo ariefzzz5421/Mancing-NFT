@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BadgeCheck, ExternalLink } from "lucide-react";
 import type { Collection, Stats, Book } from "@/types/market";
-import { eth, price } from "@/lib/quant/book";
+import { eth, price, spread } from "@/lib/quant/book";
 import { ChainLogo } from "@/components/ChainLogo";
 import { OpenSeaDetailsLink } from "@/components/OpenSeaDetailsLink";
 export function CollectionHeader({
@@ -15,6 +15,7 @@ export function CollectionHeader({
   book: Book | null;
   slug: string;
 }) {
+  const bookSpread = spread(b?.bids[0]?.priceWei, b?.asks[0]?.priceWei);
   return (
     <section className="t-panel terminal-collection-overview">
       <div className="panel-title">
@@ -42,24 +43,16 @@ export function CollectionHeader({
           </span>
         </div>
       </div>
-      <div className="t-kv">
-        <span>Floor price</span>
-        <strong>{price(s?.floor)} ETH</strong>
-      </div>
       <dl className="metric-list">
         {[
+          ["Floor", `${price(s?.floor)} ETH`],
           ["Best bid", `${eth(b?.bids[0]?.priceWei)} WETH`],
+          ["Best ask", `${eth(b?.asks[0]?.priceWei)} ETH`],
+          ["Gross spread", bookSpread ? `${(bookSpread.bps / 100).toFixed(2)}%` : "—"],
           ["24h volume", `${price(s?.volume)} ETH`],
           ["24h sales", price(s?.sales)],
           ["Total supply", price(c?.supply)],
           ["Owners", price(s?.owners)],
-          [
-            "Listed",
-            c?.supply && s?.listed != null
-              ? `${price((s.listed / c.supply) * 100)}%`
-              : "—",
-          ],
-          ["Last sale", price(s?.lastSale)],
         ].map(([label, value]) => (
           <div key={label}>
             <dt>{label}</dt>

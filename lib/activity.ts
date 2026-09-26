@@ -220,6 +220,7 @@ export function normalizeActivityEvent(
     ]) ?? undefined;
   const txHash =
     firstString(event, [
+      ["transaction"],
       ["transaction", "transaction_hash"],
       ["transaction", "hash"],
       ["transaction_hash"],
@@ -244,12 +245,14 @@ export function normalizeActivityEvent(
     ]) ?? undefined;
   const { paymentSymbol, priceEth } = readPrice(event);
   const buyer = readAddress(event, [
+    ["buyer"],
     ["buyer", "address"],
     ["winner_account", "address"],
     ["to_account", "address"],
     ["to_address"],
   ]);
   const seller = readAddress(event, [
+    ["seller"],
     ["seller", "address"],
     ["seller_account", "address"],
     ["from_account", "address"],
