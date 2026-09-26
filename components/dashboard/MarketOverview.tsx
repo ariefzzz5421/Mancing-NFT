@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowUpRight, BadgeCheck, RefreshCw } from "lucide-react";
 import { CollectionSearch } from "@/components/terminal/CollectionSearch";
 import { WatchlistStar } from "@/components/watchlist/WatchlistPicker";
@@ -37,6 +38,7 @@ function href(item: MarketCollection) {
 }
 
 export function MarketOverview() {
+  const router = useRouter();
   const [chain, setChain] = useState("");
   const [sort, setSort] = useState("one_day_volume");
   const [data, setData] = useState<CollectionDiscoveryResponse | null>(null);
@@ -132,7 +134,7 @@ export function MarketOverview() {
       <div className="overview-grid">
         <section className="t-panel overview-trending" aria-labelledby="overview-trending-title">
           <div className="panel-title"><span id="overview-trending-title">01 / TRENDING COLLECTIONS</span><span>OPENSEA RANK</span></div>
-          {trending.length ? trending.map((item) => <div className="overview-trend-row" key={item.slug}>
+          {trending.length ? trending.map((item) => <div className="overview-trend-row overview-clickable-row" key={item.slug} onClick={(event) => { if (!(event.target as Element).closest("a,button")) router.push(href(item)); }}>
             <span className="overview-rank">{String(item.rank).padStart(2, "0")}</span>
             <Link className="overview-collection" href={href(item)}>
               <CollectionArt item={item} /><span><strong>{item.name}{item.verified && <BadgeCheck size={14} aria-label="Verified" />}</strong><small><ChainLogo chain={item.chain} />{item.chain === "robinhood" ? "Robinhood Chain" : item.chain.replaceAll("_", " ")}</small><small className="overview-mobile-metrics">Floor {metric(item.floor, 4)} {item.floorSymbol ?? item.nativeSymbol} · 24h {metric(item.volume24h, 2)} {item.volumeSymbol ?? item.nativeSymbol}</small></span><ArrowUpRight size={15} aria-hidden="true" />
@@ -146,7 +148,7 @@ export function MarketOverview() {
         </section>
         <aside className="t-panel overview-top" aria-labelledby="overview-top-title">
           <div className="panel-title"><span id="overview-top-title">02 / TOP COLLECTIONS</span><span>{sort.replaceAll("_", " ").toUpperCase()}</span></div>
-          {top.map((item) => <div className="overview-top-row" key={item.slug}>
+          {top.map((item) => <div className="overview-top-row overview-clickable-row" key={item.slug} onClick={(event) => { if (!(event.target as Element).closest("a,button")) router.push(href(item)); }}>
             <Link className="overview-top-main" href={href(item)}>
               <span>{String(item.rank).padStart(2, "0")}</span><CollectionArt item={item} /><ChainLogo chain={item.chain} /><strong>{item.name}</strong><span className="overview-top-value">{sort === "floor_cap_estimate" ? metric(item.floor !== null && item.supply ? item.floor * item.supply : null, 2) : sort === "one_day_sales" ? metric(item.sales24h, 0) : sort === "floor_price" ? metric(item.floor, 4) : sort === "total_volume" ? metric(item.totalVolume) : metric(item.volume24h)}<small>{sort === "one_day_sales" ? "sales" : sort === "floor_price" || sort === "floor_cap_estimate" ? item.floorSymbol ?? item.nativeSymbol : sort === "one_day_volume" ? item.volumeSymbol ?? item.nativeSymbol : item.nativeSymbol}</small></span><ArrowUpRight size={14} aria-hidden="true" />
             </Link><OpenSeaDetailsLink slug={item.slug} name={item.name} />

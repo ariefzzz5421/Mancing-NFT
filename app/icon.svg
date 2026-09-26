@@ -1,8 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="7" fill="#091119"/>
-  <path d="M13 32 5 21v22l8-11Z" fill="#113242" stroke="#62D9F6" stroke-width="2.5" stroke-linejoin="round"/>
-  <path d="M12 32c8-11 22-15 35-8 4 2 7 5 10 8-3 3-6 6-10 8-13 7-27 3-35-8Z" fill="#102A39" stroke="#62D9F6" stroke-width="2.5" stroke-linejoin="round"/>
-  <path d="m25 21 6-10 9 12M25 43l6 10 9-12" stroke="#248EC0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M31 25c3 4 3 10 0 14" stroke="#248EC0" stroke-width="2.5" stroke-linecap="round"/>
-  <circle cx="45" cy="29" r="2.5" fill="#62D9F6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Mancing NFT fish mark">
+  <rect width="64" height="64" rx="8" fill="#07121B"/>
+  <path d="M7 32 3 23v18l4-9Z" fill="#143747" stroke="#53CBE9" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M9 32c8-10 18-15 30-12 7 2 13 7 19 12-6 5-12 10-19 12-12 3-22-2-30-12Z" fill="#0D2633" stroke="#53CBE9" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="m24 22 7-10 7 8M24 42l7 10 7-8" stroke="#328BAB" stroke-width="2.4" stroke-linecap="square" stroke-linejoin="round"/>
+  <path d="M20 32h12m-7-5v10" stroke="#53CBE9" stroke-width="1.7" opacity=".8"/>
+  <path d="M34 25v14M38 27v10M42 29v6" stroke="#2B94A9" stroke-width="2" stroke-linecap="square"/>
+  <circle cx="49" cy="29" r="2.6" fill="#A8F5FF"/>
+  <path d="M51 38h5" stroke="#53CBE9" stroke-width="1.5" opacity=".8"/>
 </svg>

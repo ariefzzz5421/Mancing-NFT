@@ -9,6 +9,8 @@ import { ChainLogo } from "@/components/ChainLogo";
 import { OpenSeaDetailsLink } from "@/components/OpenSeaDetailsLink";
 import type { Collection } from "@/types/market";
 import { CollectionSearch } from "./CollectionSearch";
+import { ReadOnlyMarketBook } from "./ReadOnlyMarketBook";
+import { rememberTerminal } from "@/lib/collection-navigation";
 
 type Snapshot = {
   floor: number | null;
@@ -50,6 +52,7 @@ export function CollectionTerminalPreview({ slug, requestedChain }: { slug: stri
         return;
       }
       setCollection(nextCollection);
+      rememberTerminal(slug, nextCollection.chain);
       if (statsResponse.ok) {
         const data = await statsResponse.json();
         setSnapshot(data.stats?.[slug] ?? null);
@@ -91,13 +94,7 @@ export function CollectionTerminalPreview({ slug, requestedChain }: { slug: stri
         {collection.contract && <p className="collection-terminal-preview__contract"><span>CONTRACT</span><code>{collection.contract}</code></p>}
         {!snapshot && <p className="t-note">OpenSea statistics are temporarily unavailable for this collection.</p>}
       </section>
-      <section className="t-panel collection-terminal-preview__availability" aria-label="Trading availability">
-        <span className="eyebrow">TRADING AVAILABILITY</span>
-        <h2>Collection opened in Mancing NFT</h2>
-        <p>Order book and wallet trading are not available for {chainName} yet. The execution terminal currently supports Ethereum collections only.</p>
-        <p>We do not display an Ethereum order book or enable signing for this collection.</p>
-        {chain === "ape_chain" && <Link className="t-button" href={`/collection/${encodeURIComponent(slug)}?chain=ape_chain`}>View ApeChain research</Link>}
-      </section>
+      <div className="collection-terminal-preview__book"><ReadOnlyMarketBook slug={slug} chain={chain} />{chain === "ape_chain" && <Link className="t-button" href={`/collection/${encodeURIComponent(slug)}?chain=ape_chain`}>View ApeChain research</Link>}</div>
     </div>}
   </main>;
 }

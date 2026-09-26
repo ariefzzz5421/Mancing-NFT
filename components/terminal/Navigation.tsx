@@ -11,7 +11,7 @@ import { WalletConnect, useWallet } from "@/components/wallet/WalletProvider";
 
 const routes = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
-  { href: "/terminal/pudgypenguins", label: "Terminal", icon: ChartNoAxesCombined },
+  { href: "/terminal", label: "Terminal", icon: ChartNoAxesCombined },
   { href: "/scanner", label: "Scanner", icon: ScanSearch },
   { href: "/orders", label: "Orders", icon: ListOrdered },
   { href: "/positions", label: "Positions", icon: Activity },
@@ -25,7 +25,7 @@ export function Navigation() {
   const path = usePathname();
   const wallet = useWallet();
   const [menuOpen, setMenuOpen] = useState(false);
-  const active = (href: string) => href === "/" ? path === "/" : href.startsWith("/terminal/") ? path.startsWith("/terminal/") : path === href || path.startsWith(`${href}/`);
+  const active = (href: string) => href === "/" ? path === "/" : href === "/terminal" ? path.startsWith("/terminal") : path === href || path.startsWith(`${href}/`);
   const links = routes.map(({ href, label, icon: Icon }) => <Link key={href} href={href} title={label} aria-label={label} aria-current={active(href) ? "page" : undefined} onClick={() => setMenuOpen(false)}><Icon size={19} aria-hidden="true" /><span>{label}</span></Link>);
   return <>
     <header className="terminal-chrome">

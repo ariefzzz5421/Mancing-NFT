@@ -25,6 +25,26 @@ export function CollectionSearch() {
   function navigate(slug: string, chain: string) {
     router.push(getTerminalHref(slug, chain));
   }
+  async function resolveAndOpen(input: string) {
+    const r = await fetch(`/api/resolve-collection?input=${encodeURIComponent(input)}`);
+    const d = await r.json();
+    if (!r.ok) throw Error(d.error ?? "Collection unavailable.");
+    navigate(d.slug, d.actualChain ?? d.chain);
+  }
+  async function pasteCollection(raw: string) {
+    setQuery(raw);
+    setBusy(true);
+    setError("");
+    setResults([]);
+    try {
+      const url = /^https?:\/\//i.test(raw) ? new URL(raw) : null;
+      if (url && url.origin === window.location.origin && /^\/terminal\/[^/]+\/?$/.test(url.pathname)) {
+        const slug = decodeURIComponent(url.pathname.split("/")[2]);
+        await resolveAndOpen(slug);
+      } else await resolveAndOpen(raw);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not open pasted collection."); }
+    finally { setBusy(false); }
+  }
   async function openResult(item: MarketCollection) {
     setOpening(item.slug);
     setError("");
@@ -47,12 +67,7 @@ export function CollectionSearch() {
     setResults([]);
     try {
       if (/^0x|opensea\.io|https?:/i.test(query)) {
-        const r = await fetch(
-          `/api/resolve-collection?input=${encodeURIComponent(query)}`,
-        );
-        const d = await r.json();
-        if (!r.ok) throw Error(d.error);
-        navigate(d.slug, d.actualChain ?? d.chain);
+        await resolveAndOpen(query);
       } else {
         const r = await fetch(
           `/api/collections/search?q=${encodeURIComponent(query)}`,
@@ -77,6 +92,12 @@ export function CollectionSearch() {
           aria-label="Search collection name, OpenSea URL, slug, or contract"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onPaste={(event) => {
+            const pasted = event.clipboardData.getData("text").trim();
+            const isUrl = /^https?:\/\//i.test(pasted);
+            const isContract = /^0x[a-f0-9]{40}$/i.test(pasted);
+            if (isUrl || isContract) { event.preventDefault(); void pasteCollection(pasted); }
+          }}
           placeholder="Search collection name, OpenSea URL, slug, or contract"
           required
           minLength={2}

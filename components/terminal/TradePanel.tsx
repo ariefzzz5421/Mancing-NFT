@@ -4,6 +4,7 @@ import { BuyExecution } from "./BuyExecution";
 import { FlipOfferStatus } from "./FlipOfferStatus";
 import type { Collection, Book } from "@/types/market";
 import { eth, wei, edge, spread } from "@/lib/quant/book";
+import { topOfferPrice } from "@/lib/quant/top-offer";
 import {
   useWallet,
   injected,
@@ -53,6 +54,9 @@ export function TradePanel({
     [hours, setHours] = useState(24),
     [royalty, setRoyalty] = useState(true),
     [flipStrategy, setFlipStrategy] = useState<"MATCH" | "TICK" | "CUSTOM">("MATCH"),
+    [topOfferActive, setTopOfferActive] = useState(false),
+    [topOfferBusy, setTopOfferBusy] = useState(false),
+    [topOfferObservedAt, setTopOfferObservedAt] = useState<string | null>(null),
     [nfts, setNfts] = useState<NFT[]>([]),
     [nftCursor, setNftCursor] = useState<string | null>(null),
     [token, setToken] = useState(""),
@@ -153,6 +157,26 @@ export function TradePanel({
     address: wallet.address,
     chain: wallet.chain,
   });
+  async function fetchTopOffer() {
+    const response = await fetch(`/api/collections/${encodeURIComponent(slug)}/top-offer`, { cache: "no-store" });
+    const result = await response.json() as { priceEth: string | null; reason?: string; observedAt: string; coverage?: string };
+    if (!response.ok) throw Error(result.reason ?? result.coverage ?? "Fresh offer quote unavailable.");
+    if (!result.priceEth) throw Error(result.reason ?? "No safe top-offer price available.");
+    setTopOfferObservedAt(result.observedAt);
+    return result.priceEth;
+  }
+  async function chooseTopOffer() {
+    setTopOfferBusy(true);
+    setStatus("");
+    try {
+      const next = await fetchTopOffer();
+      setTopOfferActive(true);
+      setFlipStrategy("TICK");
+      setEntry(next);
+      setStatus(`Top offer ${next} WETH from a fresh OpenSea snapshot. Review before signing; another trader may outbid it.`);
+    } catch (cause) { setStatus(cause instanceof Error ? cause.message : "Top offer unavailable."); }
+    finally { setTopOfferBusy(false); }
+  }
   async function prepare() {
     setBusy(true);
     setStatus("");
@@ -163,6 +187,13 @@ export function TradePanel({
       if (wallet.chain !== 1)
         throw Error("Switch your wallet to Ethereum mainnet.");
       if (!total) throw Error("Enter a valid price and quantity.");
+      if ((mode === "OFFER" || mode === "FLIP") && topOfferActive) {
+        const fresh = await fetchTopOffer();
+        if (fresh !== entry) {
+          setEntry(fresh);
+          throw Error(`Best bid moved. Top offer updated to ${fresh} WETH. Review the new price and prepare again.`);
+        }
+      }
       if (
         (mode === "OFFER" || mode === "FLIP") &&
         (wallet.weth === null || (wei(wallet.weth) ?? 0n) < total)
@@ -221,6 +252,14 @@ export function TradePanel({
     }
     setBusy(true);
     try {
+      if ((mode === "OFFER" || mode === "FLIP") && topOfferActive) {
+        const fresh = await fetchTopOffer();
+        if (fresh !== entry) {
+          setEntry(fresh);
+          setPrepared(null);
+          throw Error(`Best bid changed before signing. New top offer ${fresh} WETH; review and prepare again.`);
+        }
+      }
       const provider = injected();
       if (!provider || wallet.address !== prepared.account)
         throw Error("Wallet changed. Prepare again.");
@@ -282,6 +321,7 @@ export function TradePanel({
   }
   const bestBid = book?.bids[0]?.priceWei;
   const bestAsk = book?.asks[0]?.priceWei;
+  const localTopOffer = bestBid ? topOfferPrice(BigInt(bestBid), bestAsk ? BigInt(bestAsk) : null) : null;
   const flipGross = spread(bestBid, bestAsk);
   const flipEntry = wei(entry);
   const flipExit = wei(exit);
@@ -290,8 +330,10 @@ export function TradePanel({
   const flipEdge = flipEntry && flipExit ? edge(flipEntry, flipExit, 1, feeBps, royaltyBps, 500000000000000n, 50) : null;
   function chooseStrategy(strategy: typeof flipStrategy) {
     setFlipStrategy(strategy);
+    setTopOfferActive(false);
     if (!bestBid || strategy === "CUSTOM") return;
-    setEntry(eth(BigInt(bestBid) + (strategy === "TICK" ? 100000000000000n : 0n)));
+    if (strategy === "TICK") { void chooseTopOffer(); return; }
+    setEntry(eth(bestBid));
   }
   return (
     <section className="t-panel trade-panel">
@@ -301,7 +343,7 @@ export function TradePanel({
       </div>
       <div className="trade-tabs">
         {(["BUY", "OFFER", "LIST", "FLIP"] as const).map((t) => (
-          <button key={t} aria-pressed={mode === t} onClick={() => { if (t === "FLIP") { setQuantity(1); if (bestBid && flipStrategy === "MATCH") setEntry(eth(bestBid)); } setMode(t); }}>
+          <button key={t} aria-pressed={mode === t} onClick={() => { if (t !== mode) setTopOfferActive(false); if (t === "FLIP") { setQuantity(1); if (bestBid && flipStrategy === "MATCH") setEntry(eth(bestBid)); } setMode(t); }}>
             {t === "FLIP" ? "FLIP FLOP" : t}
           </button>
         ))}
@@ -320,7 +362,7 @@ export function TradePanel({
         {mode === "FLIP" && <div className="flip-workflow">
           <div className="flip-workflow__steps">OFFER <span>→</span> FILL <span>→</span> VERIFY NFT <span>→</span> LIST <span>→</span> EXIT</div>
           <div className="flip-strategies" role="group" aria-label="Offer pricing strategy">
-            {(["MATCH", "TICK", "CUSTOM"] as const).map((strategy) => <button key={strategy} type="button" aria-pressed={flipStrategy === strategy} onClick={() => chooseStrategy(strategy)}>{strategy === "MATCH" ? "Match best bid" : strategy === "TICK" ? "Bid + 0.0001 Ξ" : "Custom bid"}</button>)}
+            {(["MATCH", "TICK", "CUSTOM"] as const).map((strategy) => <button key={strategy} type="button" aria-pressed={flipStrategy === strategy} onClick={() => chooseStrategy(strategy)}>{strategy === "MATCH" ? "Match best bid" : strategy === "TICK" ? `Top offer${localTopOffer ? ` · ${localTopOffer.priceEth}` : ""}` : "Custom bid"}</button>)}
           </div>
           <dl className="metric-list flip-metrics">
             <div><dt>Best bid</dt><dd>{eth(bestBid)} WETH</dd></div>
@@ -364,11 +406,13 @@ export function TradePanel({
             value={mode === "LIST" ? exit : entry}
             onChange={(e) => {
               if (mode === "FLIP") setFlipStrategy("CUSTOM");
+              setTopOfferActive(false);
               (mode === "LIST" ? setExit : setEntry)(e.target.value);
             }}
             placeholder="0.013"
           />
         </label>
+        {(mode === "OFFER" || mode === "FLIP") && <div className="top-offer-control"><button className="t-button" type="button" disabled={topOfferBusy || busy || !bestBid} onClick={() => void chooseTopOffer()}>{topOfferBusy ? "Checking bids…" : "↑ Top offer"}</button><span>{localTopOffer ? `${localTopOffer.priceEth} WETH indicative` : "No safe top offer in this snapshot"}{topOfferObservedAt && topOfferActive ? ` · checked ${new Date(topOfferObservedAt).toLocaleTimeString()}` : ""}</span></div>}
         {mode !== "LIST" && (
           <div className="trade-input-row">
             <label className="t-field">

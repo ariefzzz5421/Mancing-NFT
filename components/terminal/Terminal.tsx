@@ -12,6 +12,7 @@ import { TopHolders } from "./TopHolders";
 import { WatchlistStar } from "@/components/watchlist/WatchlistPicker";
 import { useLiveEthPrice } from "@/components/useLiveEthPrice";
 import { eth } from "@/lib/quant/book";
+import { rememberTerminal } from "@/lib/collection-navigation";
 import type { Book, Collection, Stats, Level, Side } from "@/types/market";
 const PriceHistoryChart = dynamic(() => import("./PriceHistoryChart").then((module) => module.PriceHistoryChart), { ssr: false, loading: () => <div className="t-panel t-note">Loading price history…</div> });
 export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
@@ -30,6 +31,7 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
     [leftCollapsed, setLeftCollapsed] = useState(false),
     [rightCollapsed, setRightCollapsed] = useState(false);
   const ethUsd = useLiveEthPrice();
+  useEffect(() => { rememberTerminal(slug, "ethereum"); }, [slug]);
   const load = useCallback(
     async (signal?: AbortSignal) => {
       setLoading(true);

@@ -20,7 +20,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://nft-analytic-dashboard.vercel.app"),
+  metadataBase: new URL(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "nft-analytic-dashboard.vercel.app"}`),
   title: {
     default: "Mancing NFT | NFT Quant Execution Terminal",
     template: "%s | Mancing NFT",
