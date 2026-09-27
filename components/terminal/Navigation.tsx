@@ -35,6 +35,7 @@ export function Navigation() {
         {wallet.address && <div className="terminal-nav__balances"><span>ETH <b>{wallet.eth ?? "—"}</b></span><span>WETH <b>{wallet.weth ?? "—"}</b></span></div>}
         <WalletConnect />
       </div>
+      {wallet.error && <div className="terminal-wallet-error" role="alert">Wallet: {wallet.error}</div>}
       <MarketStatus />
     </header>
     <nav className="app-sidebar" aria-label="Primary navigation"><Link className="app-sidebar__mark" href="/" aria-label="Mancing NFT overview"><Image src="/icon.svg" alt="" width={42} height={42} /></Link>{links}</nav>

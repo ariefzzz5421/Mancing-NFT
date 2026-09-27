@@ -47,12 +47,15 @@ export function FlipOfferStatus({ slug, collection, bestAsk, onList }: {
   const fees = collection?.fees.filter((fee) => fee.required).reduce((sum, fee) => sum + fee.bps, 0) ?? 0;
   const royalties = collection?.fees.filter((fee) => !fee.required).reduce((sum, fee) => sum + fee.bps, 0) ?? 0;
   const net = inventory && floor ? edge(BigInt(inventory.entryPriceWei), BigInt(floor), 1, fees, royalties, 500000000000000n, 50) : null;
+  const stage = inventory ? 4 : offer?.status === "FILLED" || offer?.status === "FULFILLED" ? 2 : offer ? 1 : 0;
+  const stages = ["Prepare offer", "Offer active", "Verify fill", "Inventory ready", "Review listing"];
   function list(multiplier: bigint) {
     if (!inventory || !floor) return;
     onList(inventory.tokenId, eth(BigInt(floor) * multiplier / 1000n));
   }
   return <div className="flip-status">
     <div className="panel-title"><span>FLIP FLOP STATUS</span><button type="button" disabled={busy || !wallet.userId} onClick={async () => { setBusy(true); await check(); setBusy(false); }}>Verify now</button></div>
+    <ol className="flip-status__queue" aria-label="Flip Flop progress">{stages.map((label, index) => <li key={label} className={index < stage ? "is-done" : index === stage ? "is-current" : ""}><span>{String(index + 1).padStart(2, "0")}</span><strong>{label}</strong>{index === stage && <small>{index === 2 ? "Awaiting Ethereum confirmation" : "Current"}</small>}</li>)}</ol>
     {!wallet.userId ? <p className="t-note">Sign in with your connected wallet to monitor offer fills.</p> : inventory ? <div className="flip-status__body">
       <strong className="positive">OFFER FILLED · NFT #{inventory.tokenId} VERIFIED</strong>
       <dl className="metric-list"><div><dt>Entry</dt><dd>{eth(inventory.entryPriceWei)} WETH</dd></div><div><dt>{inventory.floorWei ? "Fresh reported floor" : "Latest book ask (floor unavailable)"}</dt><dd>{eth(floor)} ETH</dd></div><div><dt>Estimated net edge</dt><dd className={net && net.net >= 0n ? "positive" : "negative"}>{net ? `${eth(net.net)} ETH · ${(net.roiBps / 100).toFixed(2)}%` : "—"}</dd></div></dl>

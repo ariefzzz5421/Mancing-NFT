@@ -168,6 +168,10 @@ export function TradePanel({
   async function chooseTopOffer() {
     setTopOfferBusy(true);
     setStatus("");
+    if (localTopOffer) {
+      setEntry(localTopOffer.priceEth);
+      setStatus("Indicative top offer filled from the displayed book. Checking a fresh OpenSea snapshot…");
+    }
     try {
       const next = await fetchTopOffer();
       setTopOfferActive(true);

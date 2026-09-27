@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { PrivyProvider, usePrivy, useWallets } from "@privy-io/react-auth";
+import { PrivyProvider, useLogin, usePrivy, useWallets } from "@privy-io/react-auth";
 import { createPublicClient, custom, erc20Abi, formatEther, type Address, type EIP1193Provider } from "viem";
 import { mainnet } from "viem/chains";
 import { WETH } from "@/lib/web3/constants";
@@ -20,7 +20,7 @@ export function PrivyWalletProvider({ children, appId }: { children: React.React
 }
 
 function PrivyWalletState({ children }: { children: React.ReactNode }) {
-  const { ready, authenticated, login, logout, getAccessToken } = usePrivy();
+  const { ready, authenticated, logout, getAccessToken } = usePrivy();
   const { wallets } = useWallets();
   const active = authenticated ? wallets[0] : undefined;
   const address = (active?.address as Address | undefined) ?? null;
@@ -30,6 +30,15 @@ function PrivyWalletState({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const { login } = useLogin({ onError: (code) => {
+    const message = code === "exited_auth_flow" ? ""
+      : code === "unable_to_sign" ? "Wallet could not sign the login message. Unlock your wallet and retry; no transaction was sent."
+      : code === "too_many_requests" ? "Privy login is rate limited. Wait briefly, then retry."
+      : code === "missing_or_invalid_privy_app_id" ? "Privy app ID is invalid. Check the production environment configuration."
+      : `Privy wallet login failed (${code}). Check that this domain is allowed in Privy and your wallet extension is available.`;
+    setError(message);
+    setBusy(false);
+  } });
 
   useEffect(() => {
     let current = true;
@@ -83,7 +92,9 @@ function PrivyWalletState({ children }: { children: React.ReactNode }) {
     userId,
     getAccessToken,
     signIn,
-    connect: async () => { setBusy(true); setError(""); try { await login(); } catch (cause) { setError(cause instanceof Error ? cause.message : "Wallet connection declined."); } finally { setBusy(false); } },
+    connect: async () => { setBusy(true); setError(""); try { login(); } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Privy wallet login could not start.");
+    } finally { setBusy(false); } },
     disconnect: () => { setPrivyProvider(null); setUserId(null); void signOutWatchlist(); void logout(); },
     refresh,
   }}>{ready ? children : <div className="terminal-page">Loading wallet connection…</div>}</Context.Provider>;

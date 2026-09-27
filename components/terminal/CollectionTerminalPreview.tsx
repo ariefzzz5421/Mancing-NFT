@@ -105,7 +105,7 @@ export function CollectionTerminalPreview({ slug, requestedChain }: { slug: stri
         <div className="collection-terminal-preview__book"><ReadOnlyMarketBook slug={slug} chain={chain} onMarketChange={setMarket} onLevelSelect={(value) => { setSelection(value); setView("TRADE"); }} selection={selection} />{chain === "ape_chain" && <Link className="t-button" href={`/collection/${encodeURIComponent(slug)}?chain=ape_chain`}>View ApeChain research</Link>}</div>
         <CollectionTradeAccess slug={slug} chain={chain} market={market} selection={selection} />
       </div>
-      <div className={`collection-terminal-preview__sales${view === "SALES" ? " collection-terminal-preview__sales--active" : ""}`}><CollectionSalesAnalytics slug={slug} chain={chain} reportedSales={snapshot?.sales ?? null} /></div>
+      <div className={`collection-terminal-preview__sales${view === "SALES" ? " collection-terminal-preview__sales--active" : ""}`}><CollectionSalesAnalytics slug={slug} chain={chain} reportedSales={snapshot?.sales ?? null} floor={snapshot?.floor ?? null} floorSymbol={snapshot?.floorSymbol ?? null} /></div>
     </>}
   </main>;
 }
