@@ -15,6 +15,7 @@ import { eth } from "@/lib/quant/book";
 import { rememberTerminal } from "@/lib/collection-navigation";
 import type { Book, Collection, Stats, Level, Side } from "@/types/market";
 const PriceHistoryChart = dynamic(() => import("./PriceHistoryChart").then((module) => module.PriceHistoryChart), { ssr: false, loading: () => <div className="t-panel t-note">Loading price history…</div> });
+const CollectionSalesAnalytics = dynamic(() => import("./CollectionSalesAnalytics").then((module) => module.CollectionSalesAnalytics), { ssr: false, loading: () => <div className="t-panel t-note">Loading sales analytics…</div> });
 export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
   const [collection, setCollection] = useState<Collection | null>(null),
     [stats, setStats] = useState<Stats | null>(null),
@@ -164,6 +165,7 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
         <button className="terminal-pane-toggle terminal-pane-toggle--left" type="button" aria-expanded={!leftCollapsed} onClick={() => setLeftCollapsed((value) => !value)}>{leftCollapsed ? "+ SHOW LIQUIDITY RESEARCH" : "− HIDE LIQUIDITY RESEARCH"}</button>
         {!leftCollapsed && <div className="terminal-insights__grid"><LiquidityPanel book={book} /><TopHolders slug={slug} /><SweepCalculator book={book} ethUsd={ethUsd.priceUsd} /></div>}
       </div>
+      <div className={`terminal-sales${tab === "Analytics" ? " terminal-sales--mobile-active" : ""}`}><CollectionSalesAnalytics slug={slug} chain="ethereum" reportedSales={stats?.sales ?? null} /></div>
       <div className="mobile-execution-dock" aria-label="Trading actions">{(["BUY", "OFFER", "LIST", "FLIP"] as const).map((action) => <button key={action} type="button" aria-pressed={mode === action && tab === "Trade"} onClick={() => { if (action === "FLIP") { setQuantity(1); if (book?.bids[0]) setEntry(eth(book.bids[0].priceWei)); } setMode(action); setRightCollapsed(false); setTab("Trade"); }}>{action === "FLIP" ? "FLIP" : action}</button>)}</div>
     </main>
   );

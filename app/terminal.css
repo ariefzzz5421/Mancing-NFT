@@ -1412,6 +1412,84 @@ body {
 .top-offer-control span { color: var(--terminal-muted); font: 11px var(--font-plex-mono), monospace; }
 @media (max-width: 500px) { .top-offer-control { align-items: flex-start; flex-direction: column; } }
 @media (max-width: 500px) { .readonly-book__summary { gap: 10px 18px; } .readonly-book__columns, .readonly-book__row { grid-template-columns: minmax(0, 1.45fr) .35fr .5fr minmax(0, .9fr); gap: 3px; padding-inline: 8px; font-size: 11px; } .readonly-book__columns { font-size: 9px; } .readonly-book__row small { display: none; } }
+
+/* Collection overview stays above market depth; the execution reference is a distinct panel. */
+.collection-terminal-preview__identity { margin-top: 14px; padding: 14px 16px; min-width: 0; }
+.collection-terminal-preview__title { gap: 12px; }
+.collection-terminal-preview__title h2 { font-size: 21px; }
+.collection-terminal-preview__art { width: 60px; height: 60px; flex-basis: 60px; }
+.collection-terminal-preview__metrics { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; margin-top: 12px; padding-top: 0; }
+.collection-terminal-preview__metrics > div { padding: 12px 10px; border-right: 1px solid var(--terminal-rule); gap: 5px; }
+.collection-terminal-preview__metrics > div:last-child { border-right: 0; }
+.collection-terminal-preview__metrics strong { font-size: 15px; }
+.collection-terminal-preview__contract { flex-direction: row; align-items: center; gap: 12px; margin-top: 0; padding-top: 9px; }
+.collection-terminal-preview__grid { grid-template-columns: minmax(0, 1.45fr) minmax(280px, .7fr); margin-top: 10px; align-items: start; }
+.collection-terminal-preview__grid > .collection-trade-access { padding: 0; }
+.collection-terminal-preview__tabs { display: none; }
+.collection-terminal-preview__sales { margin-top: 10px; }
+.readonly-book__row { width: 100%; color: var(--terminal-text); background: transparent; border-right: 0; border-left: 0; border-bottom: 0; cursor: pointer; }
+.readonly-book__row:hover, .readonly-book__row[aria-pressed="true"] { background: #16303c; }
+.readonly-book__row:focus-visible { outline: 2px solid var(--terminal-accent); outline-offset: -2px; }
+.collection-trade-access { min-width: 0; }
+.collection-trade-access__tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 1px solid var(--terminal-rule); }
+.collection-trade-access__tabs button { padding: 12px 4px; font: 700 11px var(--font-plex-mono), monospace; color: var(--terminal-muted); border-right: 1px solid var(--terminal-rule); }
+.collection-trade-access__tabs button[aria-selected="true"] { color: var(--terminal-accent); background: #13303b; box-shadow: inset 0 -2px var(--terminal-accent); }
+.collection-trade-access__tabs button:hover { color: var(--terminal-text); }
+.collection-trade-access__body { padding: 18px; }
+.collection-trade-access__body h2 { margin: 0 0 16px; font-size: 17px; }
+.collection-trade-access__body dl { margin: 0; }
+.collection-trade-access__body dl > div { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--terminal-rule); }
+.collection-trade-access__body dt { color: var(--terminal-muted); }
+.collection-trade-access__body dd { margin: 0; font: 600 13px var(--font-plex-mono), monospace; text-align: right; }
+.collection-trade-access__warning { margin: 13px 0; color: #d4ab75; line-height: 1.55; font-size: 12px; }
+.collection-trade-access__action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 42px; text-decoration: none; }
+.sales-analytics { min-width: 0; }
+.sales-analytics .panel-title { padding: 12px 16px; }
+.sales-analytics .panel-title button { color: var(--terminal-accent); }
+.sales-analytics__intro { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 14px 16px 0; }
+.sales-analytics__intro span { color: var(--terminal-muted); font-size: 12px; }
+.sales-analytics__currency { display: inline-flex; align-items: center; gap: 8px; padding: 12px 16px 0; font-size: 12px; }
+.sales-analytics__currency select { background: #0e1a25; border: 1px solid var(--terminal-rule); color: var(--terminal-text); padding: 5px; }
+.sales-analytics__stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-block: 1px solid var(--terminal-rule); margin-top: 12px; }
+.sales-analytics__stats > div { min-width: 0; display: grid; gap: 5px; padding: 12px 16px; border-right: 1px solid var(--terminal-rule); }
+.sales-analytics__stats small { font: 10px var(--font-plex-mono), monospace; color: var(--terminal-muted); }
+.sales-analytics__stats strong { font: 600 15px var(--font-plex-mono), monospace; overflow-wrap: anywhere; }
+.sales-analytics__bars { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); align-items: end; gap: 6px; height: 112px; padding: 14px 16px 0; }
+.sales-analytics__bars > div { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: end; gap: 6px; }
+.sales-analytics__bars span { width: min(100%, 70px); background: #3ca7bf; min-height: 2px; }
+.sales-analytics__bars .is-uncovered span { background: transparent; border: 1px dashed #58707f; }
+.sales-analytics__bars small { color: var(--terminal-muted); font: 10px var(--font-plex-mono), monospace; }
+.sales-analytics__recent { margin-top: 14px; border-top: 1px solid var(--terminal-rule); }
+.sales-analytics__recent > div { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 18px; padding: 8px 16px; border-bottom: 1px solid var(--terminal-rule); font-size: 12px; }
+.sales-analytics__recent strong { font-family: var(--font-plex-mono), monospace; }
+.sales-analytics__recent time { color: var(--terminal-muted); }
+.sales-analytics > .t-note { padding: 0 16px; }
+.terminal-sales { margin-top: 10px; }
+@media (max-width: 1100px) { .collection-terminal-preview__metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); } .collection-terminal-preview__metrics > div { border-bottom: 1px solid var(--terminal-rule); } }
+@media (max-width: 850px) { .collection-terminal-preview__grid { grid-template-columns: 1fr; } }
+@media (max-width: 700px) {
+  .collection-terminal-preview__tabs { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 10px; border: 1px solid var(--terminal-rule); }
+  .collection-terminal-preview__tabs button { min-height: 42px; font: 700 12px var(--font-plex-mono), monospace; }
+  .collection-terminal-preview__tabs button[aria-selected="true"] { color: var(--terminal-accent); background: #15303b; box-shadow: inset 0 -2px var(--terminal-accent); }
+  .collection-terminal-preview__grid { display: block; margin-top: 0; }
+  .collection-terminal-preview__grid > * { display: none; }
+  .collection-terminal-preview__grid--book .collection-terminal-preview__book, .collection-terminal-preview__grid--trade .collection-trade-access { display: block; }
+  .collection-terminal-preview__sales { display: none; margin-top: 0; }
+  .collection-terminal-preview__sales--active { display: block; }
+  .terminal-sales { display: none; }
+  .terminal-sales--mobile-active { display: block; }
+}
+@media (max-width: 500px) {
+  .collection-terminal-preview__identity { padding: 12px; }
+  .collection-terminal-preview__metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; gap: 0; }
+  .collection-terminal-preview__metrics > div { min-width: 0; padding: 9px 6px; }
+  .collection-terminal-preview__metrics strong { white-space: normal; font-size: 13px; }
+  .collection-terminal-preview__contract { display: block; }
+  .collection-terminal-preview__contract code { display: block; }
+  .sales-analytics__stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sales-analytics__recent > div { grid-template-columns: minmax(0, 1fr) auto; gap: 5px; }
+  .sales-analytics__recent time { display: none; }
+}
 .terminal-nav { justify-content: space-between; }
 .mobile-dock, .mobile-nav-backdrop { display: none; }
 @media (min-width: 701px) { body { padding-left: 62px; } }

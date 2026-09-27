@@ -20,7 +20,7 @@ export function RecentActivity({ slug }: { slug: string }) {
   return <section className="t-panel recent-activity">
     <div className="panel-title"><span>RECENT ACTIVITY</span><button type="button" onClick={() => setRevision((value) => value + 1)}>Refresh</button></div>
     {error ? <p className="t-error">{error}</p> : !data ? <p className="t-note">Loading verified OpenSea events…</p> : data.events.length ?
-      <div className="recent-activity__list">{data.events.slice(0, 12).map((event) => <div key={event.id} className="recent-activity__row">
+      <div className="recent-activity__list">{data.events.slice(0, 12).map((event, index) => <div key={`${event.id}:${index}`} className="recent-activity__row">
         <span className={`recent-activity__type recent-activity__type--${event.eventType}`}>{event.eventType === "unknown" ? "Event" : event.eventType.replaceAll("_", " ")}</span>
         <span className="recent-activity__asset">{event.tokenName ?? (event.tokenId ? `#${event.tokenId}` : "Collection")}</span>
         <strong>{event.priceEth != null ? `${event.priceEth.toLocaleString("en-US", { maximumFractionDigits: 6 })} ${event.paymentSymbol ?? "ETH"}` : "—"}</strong>
