@@ -27,12 +27,13 @@ export function MarketStatus() {
     };
   }, []);
   const eth = prices?.assets.find((asset) => asset.symbol === "ETH")?.priceUsd ?? null;
+  const hasQuotes = prices?.assets.some((asset) => typeof asset.priceUsd === "number" && asset.priceUsd > 0) ?? false;
   const nftTxGasUsd = gas && eth ? Number(gas) * 180_000 / 1_000_000_000 * eth : null;
   const symbols = ["BTC", "ETH", "HYPE", "SOL", "BNB", "APE", "ZEC", "SP500"] as const;
-  const quotes = (copy: number) => symbols.map((symbol) => {
+  const quotes = symbols.map((symbol) => {
     const asset = prices?.assets.find((item) => item.symbol === symbol);
     const isIndex = symbol === "SP500";
-    return <div className="major-price" key={`${symbol}-${copy}`} title={asset?.lastUpdated ? `Source: ${asset.source} · updated ${new Date(asset.lastUpdated).toLocaleTimeString()}` : "Price unavailable"}>
+    return <div className="major-price" key={symbol} title={asset?.lastUpdated ? `Source: ${asset.source} · updated ${new Date(asset.lastUpdated).toLocaleTimeString()}` : "Price unavailable"}>
       <TokenLogo symbol={symbol} className="major-price__logo" />
       <span>{isIndex ? "S&P 500" : symbol}</span>
       <strong>{asset?.priceUsd ? `${isIndex ? "" : "$"}${asset.priceUsd.toLocaleString("en-US", { maximumFractionDigits: asset.priceUsd < 1 ? 4 : 2 })}${isIndex ? " pts" : ""}` : "—"}</strong>
@@ -40,37 +41,21 @@ export function MarketStatus() {
     </div>;
   });
   return (<>
-    <div className="major-prices" aria-label="Market prices: crypto in USD and S&P 500 in index points">
+    {hasQuotes && <div className="major-prices" aria-label="Market prices: crypto in USD and S&P 500 in index points">
       <div className="major-prices__track">
-        <div className="major-prices__group">{quotes(0)}</div>
-        <div className="major-prices__group" aria-hidden="true">{quotes(1)}</div>
+        <div className="major-prices__group">{quotes}</div>
       </div>
-    </div>
+    </div>}
     <div className="market-status">
-      <span>
-        ETH{" "}
-        <b>
-          {eth
-            ? `$${eth.toLocaleString("en-US", { maximumFractionDigits: 2 })}`
-            : "Unavailable"}
-        </b>
-      </span>
-      <span>
-        GAS <b>{gas ? `${Number(gas).toLocaleString("en-US", { maximumFractionDigits: 3 })} gwei` : "Unavailable"}</b>
-      </span>
-      <span>EST. NFT TX <b>{nftTxGasUsd === null ? "Unavailable" : `≈ $${nftTxGasUsd.toFixed(2)}`}</b> <small>(180k gas units)</small></span>
-      <span>
-        NETWORK <b>Ethereum</b>
-      </span>
-      <span className={health?.state === "Operational" ? "positive" : "status-warning"}>OPENSEA <b>{health?.state ?? "Checking…"}</b></span>
-      <span className="status-time">
+      {eth !== null && eth > 0 && <span>ETH <b>${eth.toLocaleString("en-US", { maximumFractionDigits: 2 })}</b></span>}
+      {gas && <span>GAS <b>{Number(gas).toLocaleString("en-US", { maximumFractionDigits: 3 })} gwei</b></span>}
+      {nftTxGasUsd !== null && <span>EST. NFT TX <b>≈ ${nftTxGasUsd.toFixed(2)}</b> <small>(180k gas units)</small></span>}
+      {(eth || gas) && <span>NETWORK <b>Ethereum</b></span>}
+      <span className={health?.state === "Operational" ? "positive" : "status-warning"}>OPENSEA <b>{health?.state === "Authentication Failed" ? "Unavailable" : health?.state ?? "Checking…"}</b></span>
+      {gasUpdatedAt && <span className="status-time">
         LAST CHECK{" "}
-        <b>
-          {gasUpdatedAt
-            ? new Date(gasUpdatedAt).toLocaleTimeString()
-            : "—"}
-        </b>
-      </span>
+        <b>{new Date(gasUpdatedAt).toLocaleTimeString()}</b>
+      </span>}
     </div>
   </>);
 }

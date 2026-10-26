@@ -1,8 +1,4 @@
-/* Hallmark · genre: modern-minimal · macrostructure: 05 Workbench · design-system: design.md · designed-as-app */
-/* Hallmark · genre: exchange-terminal · macrostructure: 20 Ecosystem Index · theme: studied-DNA (source: user screenshot) · designed-as-app */
 @import "tailwindcss";
-/* Hallmark · pre-emit critique: P5 H5 E4 S5 R4 V5 */
-/* Hallmark · slop: pass · contrast: pass (40-41) · mobile: pass (34, 49, 50-57) */
 @import "../tokens.css";
 
 :root {
@@ -1996,13 +1992,6 @@ a {
   }
 }
 
-/* Hallmark · genre: exchange-terminal · macrostructure: 20 Ecosystem Index · design-system: design.md */
-/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 · reference-informed, no interface copying */
-
-* {
-  letter-spacing: 0 !important;
-}
-
 .app-main {
   padding-block-start: 0;
 }
@@ -2618,11 +2607,6 @@ a {
     min-height: 4rem;
   }
 }
-
-/* Hallmark · 2026-08-04 refinement · exchange terminal
- * Pre-emit critique: P5 H5 E4 S5 R5 V4
- * Search command bar · capital depth · ownership · listing liquidity
- */
 
 .command-dock--terminal {
   grid-template-columns: minmax(15rem, 0.34fr) minmax(0, 1.66fr);

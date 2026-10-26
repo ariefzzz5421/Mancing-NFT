@@ -6,9 +6,12 @@ import type { MarketCollection } from "@/lib/types";
 import { ChainLogo } from "@/components/ChainLogo";
 import { OpenSeaDetailsLink } from "@/components/OpenSeaDetailsLink";
 import { getTerminalHref } from "@/lib/collection-navigation";
+import { readableMarketError } from "@/lib/market-error-message";
+
 export function CollectionSearch() {
   const router = useRouter();
   const container = useRef<HTMLDivElement>(null);
+  const searchVersion = useRef(0);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MarketCollection[]>([]);
   const [busy, setBusy] = useState(false);
@@ -25,13 +28,14 @@ export function CollectionSearch() {
   function navigate(slug: string, chain: string) {
     router.push(getTerminalHref(slug, chain));
   }
-  async function resolveAndOpen(input: string) {
+  async function resolveAndOpen(input: string, version: number) {
     const r = await fetch(`/api/resolve-collection?input=${encodeURIComponent(input)}`);
     const d = await r.json();
     if (!r.ok) throw Error(d.error ?? "Collection unavailable.");
-    navigate(d.slug, d.actualChain ?? d.chain);
+    if (version === searchVersion.current) navigate(d.slug, d.actualChain ?? d.chain);
   }
   async function pasteCollection(raw: string) {
+    const version = ++searchVersion.current;
     setQuery(raw);
     setBusy(true);
     setError("");
@@ -40,10 +44,10 @@ export function CollectionSearch() {
       const url = /^https?:\/\//i.test(raw) ? new URL(raw) : null;
       if (url && url.origin === window.location.origin && /^\/terminal\/[^/]+\/?$/.test(url.pathname)) {
         const slug = decodeURIComponent(url.pathname.split("/")[2]);
-        await resolveAndOpen(slug);
-      } else await resolveAndOpen(raw);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not open pasted collection."); }
-    finally { setBusy(false); }
+        await resolveAndOpen(slug, version);
+      } else await resolveAndOpen(raw, version);
+    } catch (cause) { if (version === searchVersion.current) setError(readableMarketError(cause, "Could not open pasted collection.")); }
+    finally { if (version === searchVersion.current) setBusy(false); }
   }
   async function openResult(item: MarketCollection) {
     setOpening(item.slug);
@@ -56,32 +60,34 @@ export function CollectionSearch() {
         navigate(item.slug, data.actualChain ?? data.chain);
       } else navigate(item.slug, item.chain);
       setResults([]);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not open collection."); }
+    } catch (cause) { setError(readableMarketError(cause, "Could not open collection.")); }
     finally { setOpening(null); }
   }
   async function search(e: React.FormEvent) {
     e.preventDefault();
     if (query.trim().length < 2) return;
+    const version = ++searchVersion.current;
     setBusy(true);
     setError("");
     setResults([]);
     try {
       if (/^0x|opensea\.io|https?:/i.test(query)) {
-        await resolveAndOpen(query);
+        await resolveAndOpen(query, version);
       } else {
         const r = await fetch(
           `/api/collections/search?q=${encodeURIComponent(query)}`,
         );
         const d = await r.json();
         if (!r.ok) throw Error(d.error);
+        if (version !== searchVersion.current) return;
         setResults(d.results);
         if (!d.results.length)
           setError("No matches. Try the exact OpenSea slug.");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Search unavailable");
+      if (version === searchVersion.current) setError(readableMarketError(e, "Search unavailable."));
     } finally {
-      setBusy(false);
+      if (version === searchVersion.current) setBusy(false);
     }
   }
   return (
@@ -91,7 +97,7 @@ export function CollectionSearch() {
         <input
           aria-label="Search collection name, OpenSea URL, slug, or contract"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => { searchVersion.current += 1; setQuery(e.target.value); setResults([]); setError(""); setBusy(false); }}
           onPaste={(event) => {
             const pasted = event.clipboardData.getData("text").trim();
             const isUrl = /^https?:\/\//i.test(pasted);
@@ -115,7 +121,7 @@ export function CollectionSearch() {
         <div className="search-results" role="region" aria-label="OpenSea collection search results">
           <div className="search-results__heading">{results.length} OpenSea collection results · choose one</div>
           {results.map((r) => (
-            <div className="search-results__row" key={r.slug}>
+            <div className="search-results__row" key={`${r.chain}-${r.slug}`}>
             <button
               type="button"
               disabled={opening !== null}
@@ -142,7 +148,7 @@ export function CollectionSearch() {
           ["milady", "Milady"],
           ["azuki", "Azuki"],
         ].map(([s, n]) => (
-          <button key={s} onClick={() => router.push(getTerminalHref(s, "ethereum"))}>
+          <button key={s} type="button" onClick={() => router.push(getTerminalHref(s, "ethereum"))}>
             {n}
             <ArrowUpRight size={12} />
           </button>

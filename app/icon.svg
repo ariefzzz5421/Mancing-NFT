@@ -1,10 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Mancing NFT fishing hook">
-  <rect width="64" height="64" rx="8" fill="#07121B"/>
-  <path d="M11 52 40 10" stroke="#55CDEB" stroke-width="4" stroke-linecap="round"/>
-  <path d="M37 14c7-3 12-2 17 2" stroke="#9AE9F5" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M54 16v24" stroke="#55CDEB" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M54 40v4a8 8 0 0 1-16 0v-3" stroke="#55CDEB" stroke-width="3.5" stroke-linecap="round"/>
-  <path d="m38 41-4 4" stroke="#55CDEB" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="19" cy="40" r="6" fill="#07121B" stroke="#55CDEB" stroke-width="3"/>
-  <circle cx="19" cy="40" r="2" fill="#E6AA63"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Mancing NFT mark">
+  <rect x="1" y="1" width="62" height="62" rx="15" fill="#0D1B22" stroke="#315059" stroke-width="2"/>
+  <path d="M11 52 38 12c2-3 5-3 8-1 5 3 8 8 8 14v18c0 8-5 13-12 13-8 0-13-5-13-12v-4l-5 5" stroke="#69DDE0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M37 43v5m6-11v11m6-17v17" stroke="#C5F7EB" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="18" cy="42" r="6.5" fill="#0D1B22" stroke="#69DDE0" stroke-width="3.5"/>
+  <circle cx="18" cy="42" r="2" fill="#F0B56A"/>
 </svg>

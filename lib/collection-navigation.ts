@@ -15,7 +15,11 @@ export function rememberTerminal(slug: string, chain: string) {
 
 export function recentTerminal() {
   if (typeof window === "undefined") return null;
-  const value = window.localStorage.getItem(recentTerminalKey);
-  if (!value || !/^\/terminal\/[a-z0-9_.%-]+(?:\?chain=[a-z0-9_-]+)?$/i.test(value)) return null;
-  return value;
+  try {
+    const value = window.localStorage.getItem(recentTerminalKey);
+    if (!value || !/^\/terminal\/[a-z0-9_.%-]+(?:\?chain=[a-z0-9_-]+)?$/i.test(value)) return null;
+    return value;
+  } catch {
+    return null;
+  }
 }

@@ -13,6 +13,7 @@ import { WatchlistStar } from "@/components/watchlist/WatchlistPicker";
 import { useLiveEthPrice } from "@/components/useLiveEthPrice";
 import { eth } from "@/lib/quant/book";
 import { rememberTerminal } from "@/lib/collection-navigation";
+import { readableMarketError } from "@/lib/market-error-message";
 import type { Book, Collection, Stats, Level, Side } from "@/types/market";
 const PriceHistoryChart = dynamic(() => import("./PriceHistoryChart").then((module) => module.PriceHistoryChart), { ssr: false, loading: () => <div className="t-panel t-note">Loading price history…</div> });
 const CollectionSalesAnalytics = dynamic(() => import("./CollectionSalesAnalytics").then((module) => module.CollectionSalesAnalytics), { ssr: false, loading: () => <div className="t-panel t-note">Loading sales analytics…</div> });
@@ -48,19 +49,25 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
         }),
       );
       if (signal?.aborted) return;
-      setError(
-        responses
-          .flatMap((r) => (r.status === "rejected" ? [r.reason.message] : []))
-          .join(" · "),
-      );
+      setError([...new Set(responses.flatMap((r) =>
+        r.status === "rejected" ? [readableMarketError(r.reason)] : [],
+      ))].join(" · "));
       if (responses[0].status === "fulfilled")
         setCollection(responses[0].value);
+      else setCollection(null);
       if (responses[1].status === "fulfilled") setStats(responses[1].value);
+      else setStats(null);
       if (responses[2].status === "fulfilled") {
         const b: Book = responses[2].value;
         setBook(b);
         setEntry((v) => v || (b.bids[0] ? eth(b.bids[0].priceWei) : ""));
         setExit((v) => v || (b.asks[0] ? eth(b.asks[0].priceWei) : ""));
+      } else {
+        setBook(null);
+        setSelected("");
+        setSelectedOrder(null);
+        setEntry("");
+        setExit("");
       }
       setLoading(false);
     },
@@ -97,9 +104,7 @@ export function Terminal({ slug = "pudgypenguins" }: { slug?: string }) {
       <div className="terminal-heading">
         <div>
           <span className="eyebrow">COLLECTION LIQUIDITY / ETHEREUM</span>
-          <h1>
-            Trading terminal<span className="heading-dot">.</span>
-          </h1>
+          <h1>Trading terminal</h1>
         </div>
         <WatchlistStar item={{ slug, chain: "ethereum", name: collection?.name ?? slug, imageUrl: collection?.image }} className="terminal-star" showText />
       </div>

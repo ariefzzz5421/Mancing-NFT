@@ -23,6 +23,7 @@ import { SweepLadderTable } from "@/components/SweepLadderTable";
 import { useLiveAssetPrice, useLiveEthPrice } from "@/components/useLiveEthPrice";
 import { TrackedWalletsPanel } from "@/components/wallets/TrackedWalletsPanel";
 import { formatDateTime, formatUsd } from "@/lib/format";
+import { readableMarketError } from "@/lib/market-error-message";
 import {
   getWatchlistKey,
   type SupportedChain,
@@ -172,7 +173,7 @@ export function CollectionDetailPage({ chain, slug }: CollectionDetailPageProps)
         });
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Failed to analyze collection.");
+      setError(readableMarketError(cause, "Failed to analyze collection."));
     } finally {
       setLoading(false);
     }
