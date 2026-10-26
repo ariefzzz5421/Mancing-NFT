@@ -93,10 +93,10 @@ export function AccountLedger({
           <span className="eyebrow">CONNECTED WALLET / ETHEREUM</span>
           <h1>
             {view === "wallet"
-              ? "Wallet."
+              ? "Wallet"
               : view === "orders"
-                ? "Order ledger."
-                : "Positions."}
+                ? "Order ledger"
+                : "Positions"}
           </h1>
         </div>
         <WalletConnect />

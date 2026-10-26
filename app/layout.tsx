@@ -1,38 +1,45 @@
 import type { Metadata } from "next";
-import { Geist, IBM_Plex_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { AppFooter } from "@/components/AppFooter";
 import { AppNav } from "@/components/AppNav";
 import "./globals.css";
 import "./terminal.css";
+import "./redesign.css";
 import { WalletProvider } from "@/components/wallet/WalletProvider";
 import { PrivyWalletProvider } from "@/components/wallet/PrivyWalletProvider";
 import { WatchlistProvider } from "@/lib/watchlist";
 
-const geist = Geist({
-  subsets: ["latin"],
+const geist = localFont({
+  src: "./fonts/geist-latin-wght-normal.woff2",
   variable: "--font-geist",
+  weight: "100 900",
+  display: "swap",
 });
 
-const plexMono = IBM_Plex_Mono({
-  subsets: ["latin"],
+const plexMono = localFont({
+  src: [
+    { path: "./fonts/ibm-plex-mono-latin-400-normal.woff2", weight: "400" },
+    { path: "./fonts/ibm-plex-mono-latin-500-normal.woff2", weight: "500" },
+    { path: "./fonts/ibm-plex-mono-latin-600-normal.woff2", weight: "600" },
+  ],
   variable: "--font-plex-mono",
-  weight: ["400", "500", "600"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   metadataBase: new URL(`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "nft-analytic-dashboard.vercel.app"}`),
   title: {
-    default: "Mancing NFT | NFT Quant Execution Terminal",
+    default: "Mancing NFT | Collection Market Research",
     template: "%s | Mancing NFT",
   },
   openGraph: {
     title: "Mancing NFT",
-    description: "NFT Quant Execution Terminal",
+    description: "Collection market research and trading tools",
     siteName: "Mancing NFT",
     type: "website",
   },
   description:
-    "NFT Quant Execution Terminal. Inspect collection liquidity, bid/ask depth, spread and estimated net edge before wallet-signed execution.",
+    "Research collection rankings, order-book depth, spreads, and costs before wallet-signed NFT trades.",
   icons: {
     icon: "/icon.svg",
   },

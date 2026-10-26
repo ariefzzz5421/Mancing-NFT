@@ -8,6 +8,7 @@ import { OpenSeaDetailsLink } from "@/components/OpenSeaDetailsLink";
 export function ScannerTable() {
   const [rows, setRows] = useState<MarketCollection[]>([]),
     [books, setBooks] = useState<Record<string, Book>>({}),
+    [failedBooks, setFailedBooks] = useState<string[]>([]),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [sort, setSort] = useState("volume"),
@@ -17,33 +18,45 @@ export function ScannerTable() {
     async function load() {
       setBusy(true);
       setError("");
+      setRows([]);
+      setBooks({});
+      setFailedBooks([]);
       try {
         const r = await fetch("/api/discovery", { signal: controller.signal });
         const d = await r.json();
         if (!r.ok)
-          throw Error(
-            d.error ?? d.warnings?.join(" · ") ?? "Discovery unavailable",
-          );
+          throw Error("Collection rankings are unavailable. Try again later.");
         const collections: MarketCollection[] = d.top
           .filter((x: MarketCollection) => x.chain === "ethereum")
           .slice(0, 8);
         setRows(collections);
+        let failedCount = 0;
         for (let i = 0; i < collections.length; i += 2) {
           if (controller.signal.aborted) break;
-          await Promise.all(
-            collections.slice(i, i + 2).map(async (c) => {
+          const pair = collections.slice(i, i + 2);
+          const results = await Promise.allSettled(
+            pair.map(async (c) => {
               const r = await fetch(`/api/collections/${c.slug}/orders`, {
                 signal: controller.signal,
               });
               const b = await r.json();
-              if (!r.ok) throw Error(b.error);
-              setBooks((v) => ({ ...v, [c.slug]: b }));
+              if (!r.ok) throw Error("Order book unavailable");
+              return b as Book;
             }),
           );
+          if (controller.signal.aborted) break;
+          results.forEach((result, index) => {
+            if (result.status === "fulfilled") setBooks((current) => ({ ...current, [pair[index].slug]: result.value }));
+            else {
+              failedCount += 1;
+              setFailedBooks((current) => [...current, pair[index].slug]);
+            }
+          });
         }
+        if (!controller.signal.aborted && failedCount) setError("Some order books could not load. Unavailable values are shown as —.");
       } catch (e) {
         if (!controller.signal.aborted)
-          setError(e instanceof Error ? e.message : "Scanner unavailable");
+          setError(e instanceof Error ? e.message : "Scanner unavailable.");
       } finally {
         if (!controller.signal.aborted) setBusy(false);
       }
@@ -67,8 +80,8 @@ export function ScannerTable() {
     <main className="terminal-page">
       <div className="terminal-heading">
         <div>
-          <span className="eyebrow">DISCOVER / COMPARE / INVESTIGATE</span>
-          <h1>Market scanner.</h1>
+          <span className="eyebrow">COLLECTION COMPARISON</span>
+          <h1>Market scanner</h1>
         </div>
         <button
           className="t-button"
@@ -95,12 +108,12 @@ export function ScannerTable() {
           / NFT
         </span>
       </div>
-      {error && (
+      {error && rows.length > 0 && (
         <p className="t-error" role="alert">
           {error}
         </p>
       )}
-      <div className="table-scroll">
+      {!rows.length ? <section className="overview-empty scanner-empty" role="status"><span className="eyebrow">SCANNER STATUS</span><h2>{busy ? "Loading collections" : "Scanner data is unavailable"}</h2><p>{busy ? "Fetching rankings and order books…" : "The collection feed could not load. Try again when market data is available."}</p>{!busy && <button className="t-button" type="button" onClick={() => setNonce((value) => value + 1)}>Try again</button>}</section> : <div className="table-scroll">
         <table className="terminal-table">
           <thead>
             <tr>
@@ -159,7 +172,7 @@ export function ScannerTable() {
                   <td>{price(c.volume24h)}</td>
                   <td>{price(c.sales24h)}</td>
                   <td>
-                    {b?.errors.length
+                    {failedBooks.includes(c.slug) || b?.errors.length
                       ? "Unavailable"
                       : b?.complete
                         ? "Full snapshot"
@@ -172,14 +185,7 @@ export function ScannerTable() {
             })}
           </tbody>
         </table>
-        {!rows.length && (
-          <div className="ledger-empty">
-            {busy
-              ? "Loading collection universe…"
-              : "Market data temporarily unavailable. Refresh to retry."}
-          </div>
-        )}
-      </div>
+      </div>}
       <p className="t-note">
         Collection-wide bids only. Depth is advertised and may share maker
         funds. Price validity and fees must be rechecked before execution.

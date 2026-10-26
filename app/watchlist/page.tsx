@@ -55,7 +55,7 @@ export default function Page() {
 
   return <main className="terminal-page">
     <div className="terminal-heading">
-      <div><span className="eyebrow">YOUR COLLECTION RADAR</span><h1>Watchlist.</h1></div>
+      <div><span className="eyebrow">SAVED COLLECTIONS</span><h1>Watchlist</h1></div>
     </div>
     <CollectionSearch />
     <div className="watchlist-toolbar">

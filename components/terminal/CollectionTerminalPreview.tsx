@@ -13,6 +13,7 @@ import { CollectionTradeAccess } from "./CollectionTradeAccess";
 import { CollectionSalesAnalytics } from "./CollectionSalesAnalytics";
 import type { MarketBookGroup } from "@/lib/opensea/read-only-book";
 import { rememberTerminal } from "@/lib/collection-navigation";
+import { readableMarketError } from "@/lib/market-error-message";
 
 type Snapshot = {
   floor: number | null;
@@ -63,7 +64,13 @@ export function CollectionTerminalPreview({ slug, requestedChain }: { slug: stri
         setSnapshot(data.stats?.[slug] ?? null);
       } else setSnapshot(null);
     } catch (cause) {
-      if (!signal.aborted) setError(cause instanceof Error ? cause.message : "Collection unavailable.");
+      if (!signal.aborted) {
+        setCollection(null);
+        setSnapshot(null);
+        setMarket(null);
+        setSelection(null);
+        setError(readableMarketError(cause, "Collection unavailable."));
+      }
     } finally {
       if (!signal.aborted) setLoading(false);
     }
@@ -76,11 +83,12 @@ export function CollectionTerminalPreview({ slug, requestedChain }: { slug: stri
   }, [load, revision]);
 
   const chain = collection?.chain || requestedChain;
-  const chainName = chain === "ape_chain" ? "ApeChain" : chain.replaceAll("_", " ");
+  const chainName = chain === "ape_chain" ? "ApeChain" : chain === "unknown" ? "Network pending" : chain.replaceAll("_", " ");
   return <main className="terminal-page collection-terminal-preview">
-    <div className="terminal-heading"><div><span className="eyebrow">COLLECTION / {chainName.toUpperCase()}</span><h1>Trading terminal<span className="heading-dot">.</span></h1></div></div>
+    <div className="terminal-heading"><div><span className="eyebrow">COLLECTION / {chainName.toUpperCase()}</span><h1>Trading terminal</h1></div></div>
     {loading && !collection && <div className="t-panel collection-terminal-preview__loading" role="status">Loading collection details…</div>}
-    {error && <div className="t-error" role="alert">{error} <button type="button" onClick={() => setRevision((value) => value + 1)}>Retry</button></div>}
+    {error && !collection && <section className="overview-empty" role="alert"><span className="eyebrow">MARKET DATA</span><h2>Collection unavailable</h2><p>{error}</p><div><button className="t-button" type="button" onClick={() => setRevision((value) => value + 1)}>Try again</button><Link className="t-button" href="/">Browse collections</Link></div></section>}
+    {error && collection && <div className="t-error" role="alert">{error} <button type="button" onClick={() => setRevision((value) => value + 1)}>Retry</button></div>}
     {collection && <>
       <section className="t-panel collection-terminal-preview__identity" aria-label="Collection overview">
         <div className="collection-terminal-preview__title">

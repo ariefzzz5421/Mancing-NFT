@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, BadgeCheck, RefreshCw } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BadgeCheck, RefreshCw } from "lucide-react";
 import { CollectionSearch } from "@/components/terminal/CollectionSearch";
 import { WatchlistStar } from "@/components/watchlist/WatchlistPicker";
 import { ChainLogo } from "@/components/ChainLogo";
@@ -114,20 +114,33 @@ export function MarketOverview() {
   const maxVolume = Math.max(1, ...trending.map((item) => item.volume24h ?? 0));
 
   return <main className="terminal-page market-overview">
-    <div className="terminal-heading">
-      <div><span className="eyebrow">OPENSEA / COLLECTION DISCOVERY</span><h1>Market overview<span className="heading-dot">.</span></h1></div>
-      <button className="t-button" type="button" onClick={() => setRefreshVersion((value) => value + 1)} disabled={loading}><RefreshCw size={14} aria-hidden="true" /> {loading ? "Updating…" : "Refresh"}</button>
-    </div>
-    <p className="overview-intro">Discover active collections, inspect their order books, and save the ones you want to follow.</p>
-    <CollectionSearch />
-    <div className="overview-filters" aria-label="Collection discovery filters">
+    <section className="overview-hero" aria-labelledby="overview-title">
+      <div className="overview-hero__copy">
+        <span className="eyebrow">MANCING NFT / COLLECTION MARKETS</span>
+        <h1 id="overview-title">Explore NFT collections.<br /><span>Review the order book.</span></h1>
+        <p>Compare OpenSea rankings, bids, asks, and estimated costs before signing.</p>
+      </div>
+      <div className="overview-hero__paths" aria-label="Explore the workspace">
+        <span>EXPLORE</span>
+        <Link href="/terminal">Open terminal <ArrowRight size={16} aria-hidden="true" /></Link>
+        <Link href="/scanner">Compare collections <ArrowRight size={16} aria-hidden="true" /></Link>
+        <Link href="/watchlist">View watchlist <ArrowRight size={16} aria-hidden="true" /></Link>
+      </div>
+    </section>
+    <section className="overview-discovery" aria-label="Collection discovery">
+      <div className="overview-section-head"><div><span className="eyebrow">DISCOVERY</span><h2>Find a collection</h2></div><span>Search by name, URL, slug, or contract</span></div>
+      <CollectionSearch />
+    </section>
+    <div className="overview-section-head overview-section-head--rankings"><div><span className="eyebrow">MARKET DATA</span><h2>Collection rankings</h2></div><button className="t-button" type="button" onClick={() => setRefreshVersion((value) => value + 1)} disabled={loading}><RefreshCw size={14} aria-hidden="true" /> {loading ? "Updating…" : "Refresh"}</button></div>
+    {!error && <div className="overview-filters" aria-label="Collection discovery filters">
       <div className="overview-chain-filters">
         {["", "ethereum", "solana", "base", "ape_chain", "polygon", "arbitrum", "robinhood", "arc"].map((value) => <button key={value || "all"} type="button" className={chain === value ? "active" : ""} aria-pressed={chain === value} title={value || "All chains"} onClick={() => { setChain(value); if (!value && sort === "floor_cap_estimate") setSort("one_day_volume"); }}>{value ? <ChainLogo chain={value} /> : "All"}<span>{value ? value.replaceAll("_", " ") : "All"}</span></button>)}
       </div>
       <label>TOP BY <select value={sort} onChange={(event) => setSort(event.target.value)}><option value="one_day_volume">24h volume</option><option value="one_day_sales">24h sales</option><option value="floor_price">Floor price</option><option value="total_volume">All-time volume</option><option value="floor_cap_estimate" disabled={!chain}>Est. floor cap (choose chain)</option></select></label>
-    </div>
-    {error && <div className="t-error" role="alert">OpenSea market overview unavailable: {error} <button type="button" onClick={() => setRefreshVersion((value) => value + 1)}>Retry</button></div>}
-    {!visibleData && !error && <div className="overview-loading" role="status">Loading trending collections from OpenSea…</div>}
+    </div>}
+    {error && !visibleData && <section className="overview-empty" role="status"><span className="eyebrow">CONNECTION STATUS</span><h2>Market data is unavailable</h2><p>Collection rankings could not load. Check the data connection or try again.</p><div><button className="t-button" type="button" onClick={() => setRefreshVersion((value) => value + 1)}><RefreshCw size={15} aria-hidden="true" /> Try again</button><Link className="t-button" href="/settings">View status <ArrowUpRight size={15} aria-hidden="true" /></Link></div></section>}
+    {error && visibleData && <p className="t-note" role="status">Showing the last available rankings. Refresh failed.</p>}
+    {!visibleData && !error && <div className="overview-loading" role="status">Loading collection rankings…</div>}
     {visibleData && <>
       <div className="overview-meta"><span>{visibleData.trendingMethod === "opensea_trending" ? "OPENSEA / 24H TRENDING" : "OPENSEA / 24H SALES FALLBACK"}{statsLoading ? " · Loading collection metrics…" : ""}</span><span>Updated {new Date(visibleData.lastUpdated).toLocaleTimeString()}</span></div>
       {visibleData.warnings.map((warning) => <p className="t-note" key={warning}>{warning}</p>)}
@@ -154,10 +167,10 @@ export function MarketOverview() {
             </Link><OpenSeaDetailsLink slug={item.slug} name={item.name} />
           </div>)}
           {!top.length && <div className="book-empty">Volume ranking unavailable.</div>}
-          <p className="t-note">OpenSea ranks this list by the selected metric. Market cap is not supplied by this feed; floor × supply would only be an estimate. Ranking does not imply a tradeable spread.</p>
+          <p className="t-note">Ranked by the selected metric. Floor cap is an estimate from floor price × supply, not a market cap.</p>
         </aside>
       </div>
-      <p className="t-note">Floor and 24h volume appear only when collection statistics are available. Values are OpenSea snapshots, not executable prices.</p>
+      <p className="t-note">Floor and 24h volume appear when OpenSea supplies them. Displayed prices are snapshots, not executable quotes.</p>
     </>}
   </main>;
 }

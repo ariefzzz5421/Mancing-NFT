@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
-import { WalletCards } from "lucide-react";
 import { TrackedWalletsPanel } from "@/components/wallets/TrackedWalletsPanel";
 import { useWatchlist } from "@/lib/watchlist";
 import { getCollectionHref, getWatchlistKey } from "@/lib/chains";
@@ -16,8 +15,9 @@ export function WalletsPage() {
   const [error, setError] = useState("");
   function addTracked(event: FormEvent) {
     event.preventDefault();
-    const item = items.find((value) => `${value.chain}:${value.slug}` === selected) ?? items[0];
-    if (!item) { setError("Add a collection to your watchlist first."); return; }
+    const collectionKey = selected || (items[0] ? `${items[0].chain}:${items[0].slug}` : "");
+    const item = items.find((value) => `${value.chain}:${value.slug}` === collectionKey);
+    if (!item) { setError("Choose a collection from your watchlist."); return; }
     if (!/^0x[a-fA-F0-9]{40}$/.test(address.trim())) { setError("Enter a valid EVM wallet address."); return; }
     if (!label.trim()) { setError("Enter a wallet label."); return; }
     addWallet(item.slug, { address: address.trim(), label: label.trim() }, item.chain);
@@ -25,30 +25,21 @@ export function WalletsPage() {
   }
 
   return (
-    <main className="app-main">
-      <div className="app-frame support-page">
-        <header className="page-heading">
-          <div className="flex items-center gap-3">
-            <span className="page-heading__icon">
-              <WalletCards size={20} aria-hidden="true" />
-            </span>
-            <div>
-              <h1 className="text-3xl font-semibold text-white">Wallet Tracker</h1>
-              <p className="mt-1 text-sm text-slate-400">
-                Manual creator, treasury, deployer, and sweeper wallet labels.
-              </p>
-            </div>
-          </div>
+    <main className="terminal-page wallet-tracker-page">
+      <div className="support-page">
+        <header className="terminal-heading">
+          <div><span className="eyebrow">SAVED COLLECTIONS / WALLETS</span><h1>Wallet tracker</h1></div>
         </header>
+        <p className="t-muted wallet-tracker-page__intro">Label wallets and follow their NFT activity for a saved collection.</p>
 
         <form className="wallet-tracker-add" onSubmit={addTracked}>
-          <div><strong>Track a wallet</strong><p>Give it a label and associate it with a saved collection. Its NFT feed covers the wallet on that chain.</p></div>
-          <select aria-label="Collection" value={selected || (items[0] ? `${items[0].chain}:${items[0].slug}` : "")} onChange={(event) => setSelected(event.target.value)}>
+          <div><strong>Track a wallet</strong><p>Choose a collection, then label the wallet.</p></div>
+          <select aria-label="Collection" disabled={!items.length} value={selected || (items[0] ? `${items[0].chain}:${items[0].slug}` : "")} onChange={(event) => setSelected(event.target.value)}>
             {!items.length && <option value="">Add a watchlist collection first</option>}
             {items.map((item) => <option key={`${item.chain}:${item.slug}`} value={`${item.chain}:${item.slug}`}>{item.name ?? item.slug} · {item.chain}</option>)}
           </select>
-          <input aria-label="Wallet address" placeholder="0x wallet address" value={address} onChange={(event) => setAddress(event.target.value)} />
-          <input aria-label="Wallet label" placeholder="e.g. Treasury" value={label} onChange={(event) => setLabel(event.target.value)} />
+          <input aria-label="Wallet address" disabled={!items.length} placeholder="0x wallet address" value={address} onChange={(event) => setAddress(event.target.value)} />
+          <input aria-label="Wallet label" disabled={!items.length} placeholder="e.g. Treasury" value={label} onChange={(event) => setLabel(event.target.value)} />
           <button className="button button--primary" type="submit" disabled={!items.length}>Add wallet</button>
           {error && <p className="t-error" role="alert">{error}</p>}
         </form>
@@ -63,7 +54,7 @@ export function WalletsPage() {
               className="button button--primary mt-4"
               href="/"
             >
-              Open dashboard
+              Explore collections
             </Link>
           </section>
         ) : null}
